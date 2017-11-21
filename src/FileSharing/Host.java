@@ -22,7 +22,7 @@ public class Host extends Thread {
     /* neighbors information */
     private int nConnectedPeers;                        // number of connected peers
     private boolean[] isInterestedOnMe;                 // are peers (index) interested on host
-    private boolean[] isChocked;                        // are peers (index) chocked by host
+    //private boolean[] isChocked;                        // are peers (index) chocked by host
     private BitSet completedLabel;                      // does peer own whole file?
     private HashMap<Integer, String[]> peerInfo;        // index -> peer info from PeerInfo.cfg
     private HashMap<Integer, Neighbor> neighborsInfo;   // neighbor index -> neighbor information
@@ -105,7 +105,8 @@ public class Host extends Thread {
                 neighborsInfo.put(index, neighbor);
 
                 // create a new server for file sharing
-                //(new Server(serverSocket)).start();
+                PeerToPeer thread = new PeerToPeer(neighborsInfo, index, this.index, false, nPeers, common);
+
             }
             hostSocket.close();
 
@@ -153,6 +154,7 @@ public class Host extends Thread {
         neighborsInfo.put(index, neighbor);
 
         // open a new thread for file sharing between host and this peer
+        PeerToPeer thread = new PeerToPeer(neighborsInfo, index, this.index, true, nPeers, common);
 
     }
 

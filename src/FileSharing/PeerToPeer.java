@@ -12,16 +12,17 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import Communication.*;
 
 public class PeerToPeer {
 
-    private ArrayList<String> bitfieldarray = new ArrayList<String>();
+    //private ArrayList<String> bitfieldarray = new ArrayList<String>();
 
     private boolean need_flag = false;
 
-    private ArrayList<Integer> interestlist = new ArrayList<Integer>();//need to change
+    //private ArrayList<Integer> interestlist = new ArrayList<Integer>();//need to change
 
-    private ArrayList<Integer> peerlist = new ArrayList<Integer>();//need to change
+    //private ArrayList<Integer> peerlist = new ArrayList<Integer>();//need to change
 
     private int peerid;
 
@@ -45,7 +46,7 @@ public class PeerToPeer {
 
     private String Filename;
 
-    public PeerToPeer(HashMap<Integer, Neighbor> neighborsInfo, int index_peer, int index_me, boolean handshake_flag, int peernumber, Common common) {
+    public PeerToPeer(HashMap<Integer, Neighbor> neighborsInfo, int index_peer, int index_me, int ID_me, BitSet bitfield, BitSet completedLabel, boolean[] isIntersetedOnMe, boolean handshake_flag, int peernumber, Common common) {
         this.neighborsInfo = neighborsInfo;
         // neighborsInfo.get(index).in or .out
         this.peerid = index_peer;
@@ -282,37 +283,40 @@ public class PeerToPeer {
         Neighbor a = neighborsInfo.get(peerid);
         Neighbor b = neighborsInfo.get(myid);
 
-        Object receivemessage = null;
-        try {
-            receivemessage = a.in.readObject();
-        } catch (IOException ioException) {
-            ioException.printStackTrace();
-        } catch (ClassNotFoundException whatever) {
-            whatever.printStackTrace();
-        } finally {
-            //Close connections
+        while (true) {
+            Object receivemessage = null;
             try {
-                a.in.close();
-                a.out.close();
+                receivemessage = a.in.readObject();
             } catch (IOException ioException) {
                 ioException.printStackTrace();
-            }
-        }
-
-        if (handshake_flag) {
-            createsendhandshake(a);
-            if (receivemessage instanceof Handshake) {
-                //String statushand=new Date().getTime()+": Peer "+peerid+"makes a connection to Peer "+myid;
-                if (checkhandshake((Handshake) receivemessage, a.peerID)) {
-                    Message sendbitfield = new Message(length, 5, b.getBitfield());
-                    proc_sendmessage(a, sendbitfield);
-
+            } catch (ClassNotFoundException whatever) {
+                whatever.printStackTrace();
+            } finally {
+                //Close connections
+                try {
+                    a.in.close();
+                    a.out.close();
+                } catch (IOException ioException) {
+                    ioException.printStackTrace();
                 }
             }
-        } else {
-            if (receivemessage instanceof Handshake) {
-                if (checkhandshake((Handshake) receivemessage, a.peerID)) {
-                    createsendhandshake(a);
+
+            if (handshake_flag) {
+                createsendhandshake(a);
+                if (receivemessage instanceof Handshake) {
+                    //String statushand=new Date().getTime()+": Peer "+peerid+"makes a connection to Peer "+myid;
+                    if (checkhandshake((Handshake) receivemessage, a.peerID)) {
+                        Message sendbitfield = new Message(length, 5, b.getBitfield());
+                        proc_sendmessage(a, sendbitfield);
+
+                    }
+                }
+            } else {
+                if (receivemessage instanceof Handshake) {
+                    a.setPeerID(((Handshake) receivemessage).getPeerID());
+                    if (checkhandshake((Handshake) receivemessage, a.peerID)) {
+                        createsendhandshake(a);
+                    }
                 }
             }
 

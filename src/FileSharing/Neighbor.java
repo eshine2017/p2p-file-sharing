@@ -19,8 +19,8 @@ public class Neighbor {
     private BitSet bitfield;
     private int nPieces;
     private Socket connection;
-    private ObjectInputStream in;
-    private ObjectOutputStream out;
+    ObjectInputStream in;
+    ObjectOutputStream out;
 
     /** constructor (connection established from current host) */
     public Neighbor(int index, int peerID, String address, int portNum, int nPieces,
