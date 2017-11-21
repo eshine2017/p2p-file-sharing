@@ -63,6 +63,8 @@ public class Host extends Thread {
             fp.divide();
             // set complete label to true
             completedLabel.set(index);
+
+            fp.combine(filePath);
         }
 
     }
@@ -86,14 +88,14 @@ public class Host extends Thread {
         System.out.println("Successfully connected to all running peers.");
 
         // open a Choke thread
-        Chock choke = new Chock(sharingRate, isInterestedOnMe, common, neighborsInfo);
-        choke.start();
+        //Chock choke = new Chock(sharingRate, isInterestedOnMe, common, neighborsInfo);
+        //choke.start();
 
         // wait for connection request from other peers
         try {
             ServerSocket hostSocket = new ServerSocket(portNum);
             // as long as there are peers who do not get the whole file
-            while (completedLabel.nextClearBit(0) < nPeers) {
+            //while (completedLabel.nextClearBit(0) < nPeers) {
 
                 // accept connection request from other peer
                 Socket socket = hostSocket.accept();
@@ -107,9 +109,9 @@ public class Host extends Thread {
                 neighborsInfo.put(index, neighbor);
 
                 // create a new server for file sharing
-                PeerToPeer thread = new PeerToPeer(neighborsInfo, index, this.index, false, nPeers, common);
+                //PeerToPeer thread = new PeerToPeer(neighborsInfo, index, this.index, false, nPeers, common);
 
-            }
+            //}
             hostSocket.close();
 
         } catch (IOException e) {
@@ -117,7 +119,7 @@ public class Host extends Thread {
         }
 
         // close all sockets and threads
-        choke.stopRunning();
+        //choke.stopRunning();
         System.out.println("Awesome, all peers have gotten the file!!!");
 
     }
@@ -157,7 +159,7 @@ public class Host extends Thread {
         neighborsInfo.put(index, neighbor);
 
         // open a new thread for file sharing between host and this peer
-        PeerToPeer thread = new PeerToPeer(neighborsInfo, index, this.index, true, nPeers, common);
+        //PeerToPeer thread = new PeerToPeer(neighborsInfo, index, this.index, true, nPeers, common);
 
     }
 

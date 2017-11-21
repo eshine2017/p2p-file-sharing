@@ -1,4 +1,5 @@
 package FileProcessing;
+
 import java.io.*;
 
 public class FileProcess {
@@ -9,7 +10,7 @@ public class FileProcess {
     private int pieceSize;
     //private int fileNumber = 0;
     private int numOfPiece;
-    private int lastSize = fileSize-(numOfPiece-1)*pieceSize;
+    private int lastSize;
 
     public FileProcess(String fileName, String inFilePath, String outFilePath, int fileSize, int pieceSize){
         this.fileName = fileName;
@@ -64,6 +65,7 @@ public class FileProcess {
         }else {
             numOfPiece = fileSize/pieceSize +1;
         }
+        lastSize = fileSize-(numOfPiece-1)*pieceSize;
         try {
             //read file into stream
             FileInputStream fileIn = new FileInputStream(inFilePath + fileName);
@@ -104,8 +106,8 @@ public class FileProcess {
         }
     }
 
-    public void combine(String[] partsPath, String outFilePath){
-        if(partsPath==null||partsPath.length==0||outFilePath==null){
+    public void combine(String outFilePath){
+        if(outFilePath==null){
             System.out.println("Import error, please check and try again");
             return;
         }
@@ -114,13 +116,13 @@ public class FileProcess {
             files[i] = new File(partsPath[i]+fileName);
         }*/
         try {
-            BufferedOutputStream outStream = new BufferedOutputStream(new FileOutputStream(outFilePath + fileName));
+            BufferedOutputStream outStream = new BufferedOutputStream(new FileOutputStream(outFilePath + "re" + fileName));
             System.out.println("trying to recontribute flie " + fileName +" at " +outFilePath);
             try {
                 //byte[] buf = new byte[pieceSize];
                 for (int i = 0; i < numOfPiece; i++) {
                     byte[] buf = new byte[pieceSize];
-                    FileInputStream inStream = new FileInputStream(partsPath[i] + fileName + i + ".part");
+                    FileInputStream inStream = new FileInputStream(outFilePath + fileName + i + ".part");
                     System.out.println("trying to recontribute part " + i +" of the file");
                     int count;
                     if ((count = inStream.read(buf)) != 0) {
@@ -128,6 +130,8 @@ public class FileProcess {
                         System.out.println("part" + i + " recontribute successfully");
                     }
                     inStream.close();
+                    File file = new File(outFilePath + fileName + i + ".part");
+                    file.delete();
                 }
                 outStream.close();
             }catch(IOException e){

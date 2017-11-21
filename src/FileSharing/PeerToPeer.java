@@ -1,28 +1,14 @@
 package FileSharing;
 
 import java.io.*;
-import java.io.Serializable;
 import java.util.*;
-import java.lang.Object;
-import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.math.BigInteger;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintStream;
-import java.io.File;
-import java.io.FileOutputStream;
 import Communication.*;
 
 public class PeerToPeer {
 
-    //private ArrayList<String> bitfieldarray = new ArrayList<String>();
-
     private boolean need_flag = false;
-
-    //private ArrayList<Integer> interestlist = new ArrayList<Integer>();//need to change
-
-    //private ArrayList<Integer> peerlist = new ArrayList<Integer>();//need to change
 
     private int peerid;
 
@@ -32,10 +18,6 @@ public class PeerToPeer {
 
     private HashMap<Integer, Neighbor> neighborsInfo;
 
-    private int peernumber;
-
-    private int[] completeflag = new int[peernumber];
-
     private int FileSize;
 
     private int PieceSize;
@@ -44,34 +26,47 @@ public class PeerToPeer {
 
     private int npiece = (int) npieced;
 
-    private String Filename;
+    private HashMap<Integer, Integer> Rate;
 
-    public PeerToPeer(HashMap<Integer, Neighbor> neighborsInfo, int index_peer, int index_me, int ID_me, BitSet bitfield, BitSet completedLabel, boolean[] isIntersetedOnMe, boolean handshake_flag, int peernumber, Common common) {
+    private int ID_me;
+
+    private BitSet bitfield;
+
+    private BitSet completedLabel;
+
+    private boolean[] isIntersetedOnMe;
+
+    public PeerToPeer(HashMap<Integer, Neighbor> neighborsInfo, int index_peer, int index_me, int ID_me,
+                      BitSet bitfield, BitSet completedLabel, boolean[] isIntersetedOnMe, boolean handshake_flag,
+                      Common common, HashMap<Integer, Integer> Rate) {
         this.neighborsInfo = neighborsInfo;
         // neighborsInfo.get(index).in or .out
         this.peerid = index_peer;
         this.myid = index_me;
         this.handshake_flag = handshake_flag;//true=client
-        this.peernumber = peernumber;
         this.FileSize = common.FileSize;
         this.PieceSize = common.PieceSize;
-        this.Filename = common.FileName;
+        this.Rate=Rate;
+        this.ID_me=ID_me;
+        this.bitfield=bitfield;
+        this.completedLabel=completedLabel;
+        this.isIntersetedOnMe=isIntersetedOnMe;
+
     }
 
-    private void createsendhandshake(Neighbor a) {
+    private void createsendhandshake() {
         String standardhead = "P2PFILESHARINGPROJ";
-        byte[] zeroBits = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-        Handshake message = new Handshake(standardhead, zeroBits, a.peerID);
+        Handshake message = new Handshake(standardhead, ID_me);
         try {
             //stream write the message
-            a.out.writeObject(message);
-            a.out.flush();
+            neighborsInfo.get(peerid).out.writeObject(message);
+            neighborsInfo.get(peerid).out.flush();
         } catch (IOException ioException) {
             ioException.printStackTrace();
         }
     }
 
-    private boolean checkhandshake(Handshake peerhandshake, int peerid) {
+    private boolean checkhandshake(Handshake peerhandshake, Neighbor a) {
         boolean head_flag = false;
         boolean peerid_flag = false;
         String standardhead = "P2PFILESHARINGPROJ";
@@ -80,7 +75,7 @@ public class PeerToPeer {
         if (header.equals(standardhead)) {
             head_flag = true;
         }
-        if (peeridhead == (peerid)) {
+        if (peeridhead == (a.getPeerID())) {
             peerid_flag = true;
         }
         return head_flag & peerid_flag;
@@ -96,24 +91,13 @@ public class PeerToPeer {
         }
     }
 
-    private int checkneed(Neighbor peer, Neighbor me)/*check unchoke*/ {
-        byte[] bitfieldpeer = peer.getBitfield();
-        byte[] bitfieldme = me.getBitfield();
-        int ipeer = byte2int(bitfieldpeer);
-        int ime = byte2int(bitfieldme);
-        int a = ipeer ^ ime;
-        int b = a ^ ime;
-        int c = b & a;
-        String s;
-        s = String.valueOf(c);
-        while (s.length() < npiece) {
-            s = "0" + s; // fill 0
-        }
-        int n = 1;
-        int length = npiece;
+    private int checkneed(Neighbor peer)/*check unchoke*/ {
+        BitSet bitfieldpeer = peer.getBitfield();
+        int n=0;
+        int length=bitfield.length();
         int[] intArray0 = new int[length];
         for (int i = 0; i < length; i++) {
-            if (s.charAt(i) == 1) {
+            if (bitfieldpeer.get(i)&!bitfield.get(i)) {
                 intArray0[n] = i;
                 n = n + 1;
                 need_flag = true;
@@ -138,45 +122,27 @@ public class PeerToPeer {
         return new BigInteger(b1).intValue();
     }
 
-    private boolean checkneedbit(Message peerhave, Neighbor b)/*check have*/ {
+    private boolean checkneedbit(Message peerhave)/*check have*/ {
         byte[] bitindex = peerhave.getPayload();
         int bitindexpeer = byte2int(bitindex);
-        return b.checkbitfield(bitindexpeer);
+        return bitfield.get(bitindexpeer);
     }
 
-    private void updatebitfield(Neighbor b, Message peerindex) {
-        int index = byte2int(peerindex.getIndex());
-        b.updateBitfield(index);
-    }
-
-    private boolean checkinterest(Neighbor peer, Neighbor me)/*check bitfield*/ {
-        need_flag = false;
-        byte[] bitfieldpeer = peer.getBitfield();
-        byte[] bitfieldme = me.getBitfield();
-        int ipeer = byte2int(bitfieldpeer);
-        int ime = byte2int(bitfieldme);
-        int a = ipeer ^ ime;
-        int b = a ^ ime;
-        int c = b & a;
-        String s;
-        s = String.valueOf(c);
-        while (s.length() < npiece) {
-            s = "0" + s; // fill 0
-        }
-        int n = 1;
-        int length = npiece;
+    private boolean checkinterest(Neighbor peer)/*check bitfield*/ {
+        boolean need_flag2 = false;
+        BitSet bitfieldpeer = peer.getBitfield();
+        int length=bitfield.length();
         for (int i = 0; i < length; i++) {
-            if (s.charAt(i) == 1) {
-                need_flag = true;
+            if (bitfieldpeer.get(i)&!bitfield.get(i)) {
+                need_flag2 = true;
             }
         }
-        return need_flag;
+        return need_flag2;
     }
 
     private byte[] proc_sendpiece(Message sendmessage) {
 
         int index = byte2int(sendmessage.getIndex());
-        index = index + 1;//string start from 0, fileindex start from 1
         int size;
         if (index == npiece) {
             size = PieceSize;
@@ -200,7 +166,6 @@ public class PeerToPeer {
 
     private void downloadprocess(Message piecemessage) {
         int index = byte2int(piecemessage.getIndex());
-        index = index + 1;//string start from 0, fileindex start from 1
         try {
             //File file = new File(index+".part");
             //FileOutputStream out = new FileOutputStream(file);
@@ -220,39 +185,25 @@ public class PeerToPeer {
         }
     }
 
-    private boolean checkifcomplete(Neighbor b) {
-        boolean filecomplete_flag = false;
-        byte[] bitfield = b.getBitfield();
-        int result = byte2int(bitfield);
-        String s;
-        s = String.valueOf(result);
-        while (s.length() < npiece) {
-            s = "0" + s; // fill 0
-        }
-        int length = npiece;
-        int flag = 0;
-        for (int i = 0; i < length; i++) {
-            if (s.charAt(i) == 0) {
-                flag++;
+    public static BitSet byte2bit(byte[] bytes) {
+        BitSet bits = new BitSet();
+        for (int i=0; i<bytes.length*8; i++) {
+            if ((bytes[bytes.length-i/8-1]&(1<<(i%8))) > 0) {
+                bits.set(i);
             }
         }
-        if (flag == 0) {
-            filecomplete_flag = true;
-        }
-        return filecomplete_flag;
+        return bits;
     }
 
-    private boolean checkfinish(int[] completeflag) {
-        boolean flag = true;
-        for (int i = 0; i < peernumber; i++) {
-            if (completeflag[i] == 0) {
-                flag = false;
+    public static byte[] bit2byte(BitSet bits) {
+        byte[] bytes = new byte[bits.length()/8+1];
+        for (int i=0; i<bits.length(); i++) {
+            if (bits.get(i)) {
+                bytes[bytes.length-i/8-1] |= 1<<(i%8);
             }
         }
-        return flag;
+        return bytes;
     }
-
-
  /*   private class Filewriter {
 
         private static final String LINE_SEPARATOR = System.getProperty("line.separator");
@@ -277,11 +228,12 @@ public class PeerToPeer {
 
     public void run() {
 
-        int choke = 0;
-        int length = 10;
+        int length = 10; // temp length, all set to 10
 
         Neighbor a = neighborsInfo.get(peerid);
-        Neighbor b = neighborsInfo.get(myid);
+
+        // if this is client, send handshake immediately
+        if (handshake_flag) createsendhandshake();
 
         while (true) {
             Object receivemessage = null;
@@ -289,47 +241,35 @@ public class PeerToPeer {
                 receivemessage = a.in.readObject();
             } catch (IOException ioException) {
                 ioException.printStackTrace();
-            } catch (ClassNotFoundException whatever) {
-                whatever.printStackTrace();
-            } finally {
-                //Close connections
-                try {
-                    a.in.close();
-                    a.out.close();
-                } catch (IOException ioException) {
-                    ioException.printStackTrace();
-                }
+            } catch (ClassNotFoundException e) {
+                System.err.println("Data received in unknown format!");
             }
 
-            if (handshake_flag) {
-                createsendhandshake(a);
-                if (receivemessage instanceof Handshake) {
-                    //String statushand=new Date().getTime()+": Peer "+peerid+"makes a connection to Peer "+myid;
-                    if (checkhandshake((Handshake) receivemessage, a.peerID)) {
-                        Message sendbitfield = new Message(length, 5, b.getBitfield());
-                        proc_sendmessage(a, sendbitfield);
+            if (receivemessage instanceof Handshake) {
 
-                    }
-                }
-            } else {
-                if (receivemessage instanceof Handshake) {
+                // if client, check neighbor ID, if error, kill this thread
+                if (handshake_flag) {
+                    if (!checkhandshake((Handshake) receivemessage, a)) break;
+
+                // if server, update neighbor ID, send handshake
+                } else {
                     a.setPeerID(((Handshake) receivemessage).getPeerID());
-                    if (checkhandshake((Handshake) receivemessage, a.peerID)) {
-                        createsendhandshake(a);
-                    }
+                    createsendhandshake();
                 }
+
+                // send bitfield immediately after handshake
+                Message sendbitfield = new Message(length, 5, bit2byte(bitfield) );
+                proc_sendmessage(a, sendbitfield);
+
             }
 
             if (receivemessage instanceof Message) {
                 Message abs = (Message) receivemessage;
-                if (abs.getType() == 0) {
-                    choke = 1;
-                    peerlist.remove(peerid);
-                /*choke*/
+                if (abs.getType() == 0) { /*choke*/
                 }
 
                 if (abs.getType() == 1) { /*unchoke*/
-                    int indexneed = checkneed(a, b);
+                    int indexneed = checkneed(a);
                     byte[] indexbyte = int2byte(indexneed);
                     if (need_flag = true) {
                         Message sendrequest = new Message(length, 6, indexbyte);
@@ -339,28 +279,28 @@ public class PeerToPeer {
                 }
 
                 if (abs.getType() == 2) {
-                    interestlist.add(peerid); /*interest*/
+                    isIntersetedOnMe[peerid]=true; /*interest*/
                 }
 
                 if (abs.getType() == 3) {
-                    interestlist.remove(peerid);/*not interest*/
+                    isIntersetedOnMe[peerid]=false;/*not interest*/
                 }
 
                 if (abs.getType() == 4) {/*have*/
-                    updatebitfield(a, abs);
-                    if (checkifcomplete(a)) {
-                        completeflag[a.index] = 1;
+                    int index = byte2int(abs.getPayload());
+                    a.updateBitfield(index);
+                    if (a.isComplete()) {
+                        completedLabel.set(peerid);
                     }
-                    if (checkneedbit(abs, b)) {
+                    if (!checkneedbit(abs)) {
                         Message sendinterest = new Message(length, 2, null);
                         proc_sendmessage(a, sendinterest);
                     }
-                    checkfinish(completeflag);
                 }
 
                 if (abs.getType() == 5) {/*bitfield*/
-                    a.setBitfield(abs.getPayload());
-                    if (checkinterest(a, b)) {
+                    a.setBitfield(byte2bit(abs.getPayload()));
+                    if (checkinterest(a)) {
                         Message sendinterest = new Message(length, 2, null);
                         proc_sendmessage(a, sendinterest);
                     } else {
@@ -377,10 +317,10 @@ public class PeerToPeer {
                 }
 
                 if (abs.getType() == 7) {/*piece*/
-                    peerlist.add(peerid);
                     downloadprocess(abs);
-                    updatebitfield(b, abs);
-                    int newneed = checkneed(a, b);
+                    bitfield.set(byte2int(abs.getIndex()));
+                    Rate.put(peerid,Rate.get(peerid)+1);
+                    int newneed = checkneed(a);
                     if (need_flag = true) {
                         Message sendrequest = new Message(length, 6, int2byte(newneed));
                         need_flag = false;
@@ -391,11 +331,9 @@ public class PeerToPeer {
                     }
                     Message havepiece = new Message(length, 4, abs.getIndex());
                     sendhavetoallpeer(havepiece);
-                    if (checkifcomplete(b)) {
-                        completeflag[b.index] = 1;
-                        //mergefile();
+                    if (bitfield.nextClearBit(0) >= npiece) {
+                        completedLabel.set(myid);
                     }
-                    checkfinish(completeflag);
                 }
             }
         }

@@ -13,8 +13,8 @@ public class Handshake implements Serializable {
     private int peerID;         // peer ID
 
     /** constructor */
-    public Handshake(int peerID) {
-        header = "P2PFILESHARINGPROJ";
+    public Handshake(String header, int peerID) {
+        this.header = header;
         zeroBits = new byte[10];
         this.peerID = peerID;
     }
