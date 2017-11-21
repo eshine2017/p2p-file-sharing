@@ -1,16 +1,14 @@
 package FileProcessing;
-
 import java.io.*;
 
 public class FileProcess {
-//abcacb
     private String fileName;
     private String inFilePath;
     private String outFilePath;
     private int fileSize;
     private int pieceSize;
     //private int fileNumber = 0;
-    private int numOfPiece = fileSize/pieceSize +1;
+    private int numOfPiece;
     private int lastSize = fileSize-(numOfPiece-1)*pieceSize;
 
     public FileProcess(String fileName, String inFilePath, String outFilePath, int fileSize, int pieceSize){
@@ -61,6 +59,11 @@ public class FileProcess {
             System.out.println("piece size illegal");
             return;
         }
+        if(fileSize%pieceSize==0) {
+            numOfPiece = fileSize/pieceSize;
+        }else {
+            numOfPiece = fileSize/pieceSize +1;
+        }
         try {
             //read file into stream
             FileInputStream fileIn = new FileInputStream(inFilePath + fileName);
@@ -74,19 +77,21 @@ public class FileProcess {
             }
             fileIn.close();
             //divide pieces with full size
-            for (int i = 1; i < numOfPiece; i++) {
+            for (int i = 0; i < numOfPiece-1; i++) {
                 System.out.println("trying to creat part." + i + " with size of " + pieceSize + " bytes");
                 FileOutputStream fileOut = new FileOutputStream(outFilePath + fileName + i + ".part");
                 //output subfile
-                fileOut.write(filebuf, pieceSize * (i - 1), pieceSize);
+                fileOut.write(filebuf, pieceSize * i, pieceSize);
+                fileOut.flush();
                 fileOut.close();
                 System.out.println("part." + i + " of file created successfully");
             }
             
             //divide final piece
-            System.out.println("trying to creat last part" + numOfPiece + " with size of " + lastSize + "bytes");
-            FileOutputStream fileOut = new FileOutputStream(outFilePath + fileName + numOfPiece + ".part");
+            System.out.println("trying to creat last part" + (numOfPiece-1) + " with size of " + lastSize + "bytes");
+            FileOutputStream fileOut = new FileOutputStream(outFilePath + fileName + (numOfPiece-1) + ".part");
             fileOut.write(filebuf, pieceSize * (numOfPiece - 1), lastSize);
+            fileOut.flush();
             fileOut.close();
             System.out.println("last part of file created successfully");
             System.out.println("Divide successfully");
@@ -111,13 +116,14 @@ public class FileProcess {
         try {
             BufferedOutputStream outStream = new BufferedOutputStream(new FileOutputStream(outFilePath + fileName));
             System.out.println("trying to recontribute flie " + fileName +" at " +outFilePath);
-            byte[] buf = new byte[pieceSize];
             try {
+                //byte[] buf = new byte[pieceSize];
                 for (int i = 0; i < numOfPiece; i++) {
-                    BufferedInputStream inStream = new BufferedInputStream(new FileInputStream(partsPath[i] + fileName + i + ".part"));
+                    byte[] buf = new byte[pieceSize];
+                    FileInputStream inStream = new FileInputStream(partsPath[i] + fileName + i + ".part");
                     System.out.println("trying to recontribute part " + i +" of the file");
                     int count;
-                    while ((count = inStream.read(buf)) != 0) {
+                    if ((count = inStream.read(buf)) != 0) {
                         outStream.write(buf, 0, count);
                         System.out.println("part" + i + " recontribute successfully");
                     }
