@@ -11,13 +11,14 @@ import java.util.*;
 public class Host extends Thread {
 
     /* host information */
-    private int index;          // host index for mapping 0 - nPeers
-    private int hostID;         // host ID
-    private int portNum;        // port number
-    private BitSet bitfield;    // file status in bits
-    private int nPieces;        // number of pieces divided from original file
-    private int nPeers;         // number of total peers
-    private Common common;      // common configurations
+    private int index;                  // host index for mapping 0 - nPeers
+    private int hostID;                 // host ID
+    private int portNum;                // port number
+    private BitSet bitfield;            // file status in bits
+    private boolean[] pieceRequested;   // piece request sent
+    private int nPieces;                // number of pieces divided from original file
+    private int nPeers;                 // number of total peers
+    private Common common;              // common configurations
 
     /* neighbors information */
     private int nConnectedPeers;                        // number of connected peers
@@ -39,6 +40,7 @@ public class Host extends Thread {
         nPieces = common.FileSize/common.PieceSize;
         if (common.FileSize%common.PieceSize != 0) nPieces++;
         this.bitfield = initBitfield(fileStatus); // init bitfield (all 1 or all 0)
+        pieceRequested = new boolean[nPieces];
         this.nPeers = nPeers;
         this.common = common;
 
@@ -88,8 +90,8 @@ public class Host extends Thread {
         System.out.println("Successfully connected to all running peers.");
 
         // open a Choke thread
-        //Chock choke = new Chock(sharingRate, isInterestedOnMe, common, neighborsInfo);
-        //choke.start();
+        Chock choke = new Chock(sharingRate, isInterestedOnMe, common, neighborsInfo, bitfield);
+        choke.start();
 
         // wait for connection request from other peers
         try {

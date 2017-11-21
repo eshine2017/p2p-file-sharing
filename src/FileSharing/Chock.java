@@ -27,7 +27,9 @@ public class Chock extends Thread {
     private boolean[] curInterestedMe;
     private HashMap<Integer, Neighbor> neighborsInfo;
 
-    public Chock(HashMap<Integer,Integer> curSendMeMsg, boolean[] curInterestedMe, Common x, HashMap neighborsInfo) {
+    public Chock(HashMap<Integer,Integer> curSendMeMsg, boolean[] curInterestedMe, Common x,
+                 HashMap neighborsInfo, BitSet bitfield) {
+        // bitfield.nextClearBit(0) >= nPieces
         this.numOfNeighbor = curInterestedMe.length;
         //this.isChock = isChock;
         this.curSendMeMsg = curSendMeMsg;

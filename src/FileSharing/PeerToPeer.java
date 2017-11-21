@@ -37,8 +37,8 @@ public class PeerToPeer {
     private boolean[] isIntersetedOnMe;
 
     public PeerToPeer(HashMap<Integer, Neighbor> neighborsInfo, int index_peer, int index_me, int ID_me,
-                      BitSet bitfield, BitSet completedLabel, boolean[] isIntersetedOnMe, boolean handshake_flag,
-                      Common common, HashMap<Integer, Integer> Rate) {
+                      BitSet bitfield, boolean[] pieceRequested, BitSet completedLabel, boolean[] isIntersetedOnMe,
+                      boolean handshake_flag, Common common, HashMap<Integer, Integer> Rate) {
         this.neighborsInfo = neighborsInfo;
         // neighborsInfo.get(index).in or .out
         this.peerid = index_peer;
@@ -265,7 +265,7 @@ public class PeerToPeer {
 
             if (receivemessage instanceof Message) {
                 Message abs = (Message) receivemessage;
-                if (abs.getType() == 0) { /*choke*/
+                if (abs.getType() == 0) { /*chock*/
                 }
 
                 if (abs.getType() == 1) { /*unchoke*/
