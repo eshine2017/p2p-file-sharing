@@ -46,8 +46,8 @@ public class Host extends Thread {
         nConnectedPeers = 0;
         isInterestedOnMe = new boolean[nPeers];
         // when start, all neighbors are chocked
-        isChocked = new boolean[nPeers];
-        for (int i = 0; i < nPeers; i++) isChocked[i] = true;
+        //isChocked = new boolean[nPeers];
+        //for (int i = 0; i < nPeers; i++) isChocked[i] = true;
         completedLabel = new BitSet(nPeers);
         this.peerInfo = peerInfo;
         neighborsInfo = new HashMap<>();
@@ -86,6 +86,8 @@ public class Host extends Thread {
         System.out.println("Successfully connected to all running peers.");
 
         // open a Choke thread
+        Chock choke = new Chock(sharingRate, isInterestedOnMe, common, neighborsInfo);
+        choke.start();
 
         // wait for connection request from other peers
         try {
@@ -115,6 +117,7 @@ public class Host extends Thread {
         }
 
         // close all sockets and threads
+        choke.stopRunning();
         System.out.println("Awesome, all peers have gotten the file!!!");
 
     }

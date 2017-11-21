@@ -7,6 +7,8 @@ import java.io.ObjectOutputStream;
 import java.util.*;
 
 public class Chock extends Thread {
+
+    private volatile boolean running; // running control flag
     ObjectOutputStream out;
     //value p in the description
     private int unchockInterval;
@@ -25,15 +27,16 @@ public class Chock extends Thread {
     private boolean[] curInterestedMe;
     private HashMap<Integer, Neighbor> neighborsInfo;
 
-    public Chock(boolean[] isChock, HashMap<Integer,Integer> curSendMeMsg, boolean[] curInterestedMe, Common x, HashMap neighborsInfo) {
+    public Chock(HashMap<Integer,Integer> curSendMeMsg, boolean[] curInterestedMe, Common x, HashMap neighborsInfo) {
         this.numOfNeighbor = curInterestedMe.length;
-        this.isChock = isChock;
+        //this.isChock = isChock;
         this.curSendMeMsg = curSendMeMsg;
         this.curInterestedMe = curInterestedMe;
         this.unchockInterval = x.UnchokingInterval;
         this.optUnchockInterval = x.OptimisticUnchokingInterval;
         this.numOfPreferedNerghbor = x.NumberOfPreferredNeighbors;
         this.neighborsInfo = neighborsInfo;
+        running = true;
     }
     public int getUnchockInterval(){
 
@@ -75,7 +78,7 @@ public class Chock extends Thread {
         }
         int count = 0;
         List<Integer> preferNeighbor = new LinkedList<>();
-        while(true){
+        while(running){
             try{
                 sleep(1000);
             }catch (InterruptedException e){
@@ -223,4 +226,9 @@ public class Chock extends Thread {
             ioException.printStackTrace();
         }
     }
+
+    public void stopRunning() {
+        running = false;
+    }
+
 }
