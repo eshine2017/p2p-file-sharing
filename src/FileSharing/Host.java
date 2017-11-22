@@ -20,6 +20,7 @@ public class Host extends Thread {
     private int nPeers;                 // number of total peers
     private Common common;              // common configurations
     private FileProcessing.FileProcess fp;
+    //private String filePath;
 
     /* neighbors information */
     private int nConnectedPeers;                        // number of connected peers
@@ -44,6 +45,7 @@ public class Host extends Thread {
         System.out.println(index + "'s bitfield: " + bitfield);
         pieceRequested = new boolean[nPieces];
         this.nPeers = nPeers;
+        System.out.println("I have " + nPeers + "peers.");
         this.common = common;
 
         // init neighbors info
@@ -58,12 +60,12 @@ public class Host extends Thread {
         sharingRate = new HashMap<>();
         for (int i = 0; i < nPeers; i++) sharingRate.put(i, 0);
 
+        String filePath = System.getProperty("user.dir") + File.separator
+                + "peer_" + hostID + File.separator;
+        fp = new FileProcessing.FileProcess(common.FileName, filePath,
+                filePath, common.FileSize, common.PieceSize);
         // if already have complete file, divide the file into parts
         if (fileStatus == 1) {
-            String filePath = System.getProperty("user.dir") + File.separator
-                    + "peer_" + hostID + File.separator;
-            fp = new FileProcessing.FileProcess(common.FileName, filePath,
-                    filePath, common.FileSize, common.PieceSize);
             fp.divide();
             // set complete label to true
             completedLabel.set(index);
@@ -96,44 +98,101 @@ public class Host extends Thread {
         Chock choke = new Chock(sharingRate, isInterestedOnMe, common, neighborsInfo, bitfield);
         choke.start();
 
-        // wait for connection request from other peers
-        try {
-            ServerSocket hostSocket = new ServerSocket(portNum);
-            // as long as there are peers who do not get the whole file
-            while (completedLabel.nextClearBit(0) < nPeers) {
+        // open a Server to listen to TCP request from other peers
+        Server server = new Server();
+        server.start();
 
-                // accept connection request from other peer
-                Socket socket = hostSocket.accept();
-                ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
-                out.flush();
-                ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
-
-                // add a new neighbor
-                int index = ++nConnectedPeers;
-                Neighbor neighbor = new Neighbor(index, nPieces, socket, in, out);
-                neighborsInfo.put(index, neighbor);
-
-                // create a new server for file sharing
-                PeerToPeer thread = new PeerToPeer(neighborsInfo, index, this.index, hostID, this.bitfield,
-                        pieceRequested, completedLabel, isInterestedOnMe, false, common, sharingRate);
-                neighbor.setThread(thread);
-                thread.start();
-                System.out.println(this.index + " get connected from " +index);
-
+        // wait until every peer gets complete file
+        while (true) {
+            try {
+                sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
-            hostSocket.close();
-
-        } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Current complete label: " + completedLabel);
+            if (completedLabel.nextClearBit(0) >= nPeers) break;
         }
+//        try {
+//            sleep(5000);
+//        } catch (InterruptedException e) {
+//            e.printStackTrace();
+//        }
 
         // close all sockets and threads
         String filePath = System.getProperty("user.dir") + File.separator
                 + "peer_" + hostID + File.separator;
+//        System.out.println(filePath);
+//        FileProcessing.FileProcess fp = new FileProcessing.FileProcess(common.FileName, filePath,
+//                filePath, common.FileSize, common.PieceSize);
         fp.combine(filePath);
-        //choke.stopRunning();
+//        try {
+//            sleep(5000);
+//        } catch (InterruptedException e) {
+//            e.printStackTrace();
+//        }
+        server.stopRunning();
+        choke.stopRunning();
         for (Neighbor neighbor : neighborsInfo.values()) neighbor.closeConnection();
         System.out.println("Awesome, all peers have gotten the file!!!");
+
+    }
+
+    private class Server extends Thread {
+
+        private volatile boolean running;
+        private ServerSocket hostSocket;
+
+        Server() { running = true; }
+
+        public void run() {
+
+            // wait for connection request from other peers
+            try {
+                hostSocket = new ServerSocket(portNum);
+                // as long as there are peers who do not get the whole file
+                while (running) {
+                    System.out.println("Host complete label: " + completedLabel);
+
+                    // accept connection request from other peer
+                    System.out.println("Host is listening to the socket.");
+                    Socket socket = hostSocket.accept();
+                    System.out.println("Host received connection.");
+                    ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
+                    out.flush();
+                    ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
+
+                    // add a new neighbor
+                    int neighborIndex = ++nConnectedPeers;
+                    Neighbor neighbor = new Neighbor(neighborIndex, nPieces, socket, in, out);
+                    neighborsInfo.put(neighborIndex, neighbor);
+                    sharingRate.put(neighborIndex, 0);
+
+                    // create a new server for file sharing
+                    PeerToPeer thread = new PeerToPeer(neighborsInfo, neighborIndex, index, hostID, bitfield,
+                            pieceRequested, completedLabel, isInterestedOnMe, false, common, sharingRate);
+                    neighbor.setThread(thread);
+                    thread.start();
+                    System.out.println(index + " get connected from " + neighborIndex);
+
+                }
+
+            } catch (SocketException e) {
+                // this is fine
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            System.out.println("Server is stopped.");
+        }
+
+        public void stopRunning() {
+            running = false;
+            try {
+                hostSocket.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
 
     }
 
@@ -170,9 +229,10 @@ public class Host extends Thread {
         Neighbor neighbor = new Neighbor(index, peerID, peerAddress, peerPort, nPieces, socket, in, out);
         neighbor.setBitfield(bitfield);
         neighborsInfo.put(index, neighbor);
+        sharingRate.put(index, 0);
 
         // open a new thread for file sharing between host and this peer
-        PeerToPeer thread = new PeerToPeer(neighborsInfo, index, this.index, hostID, this.bitfield, 
+        PeerToPeer thread = new PeerToPeer(neighborsInfo, index, this.index, hostID, this.bitfield,
                 pieceRequested, completedLabel, isInterestedOnMe, true, common, sharingRate);
         neighbor.setThread(thread);
         thread.start();

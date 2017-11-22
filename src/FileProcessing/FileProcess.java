@@ -18,6 +18,13 @@ public class FileProcess {
         this.pieceSize = pieceSize;
         this.inFilePath = inFilePath;
         this.outFilePath = outFilePath;
+
+        if(fileSize%pieceSize==0) {
+            numOfPiece = fileSize/pieceSize;
+        }else {
+            numOfPiece = fileSize/pieceSize +1;
+        }
+        lastSize = fileSize-(numOfPiece-1)*pieceSize;
     }
 
     //protect variable and access to get
@@ -60,12 +67,7 @@ public class FileProcess {
             System.out.println("piece size illegal");
             return;
         }
-        if(fileSize%pieceSize==0) {
-            numOfPiece = fileSize/pieceSize;
-        }else {
-            numOfPiece = fileSize/pieceSize +1;
-        }
-        lastSize = fileSize-(numOfPiece-1)*pieceSize;
+
         try {
             //read file into stream
             FileInputStream fileIn = new FileInputStream(inFilePath + fileName);
@@ -116,7 +118,7 @@ public class FileProcess {
             files[i] = new File(partsPath[i]+fileName);
         }*/
         try {
-            BufferedOutputStream outStream = new BufferedOutputStream(new FileOutputStream(outFilePath + "re" + fileName));
+            BufferedOutputStream outStream = new BufferedOutputStream(new FileOutputStream(outFilePath + fileName));
             System.out.println("trying to recontribute flie " + fileName +" at " +outFilePath);
             try {
                 //byte[] buf = new byte[pieceSize];

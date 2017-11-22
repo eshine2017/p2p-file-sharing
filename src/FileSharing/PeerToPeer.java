@@ -1,6 +1,7 @@
 package FileSharing;
 
 import java.io.*;
+import java.net.SocketException;
 import java.util.*;
 import java.nio.ByteBuffer;
 import java.math.BigInteger;
@@ -40,6 +41,10 @@ public class PeerToPeer extends Thread {
 
     private boolean chokeflag=true;
 
+    private String filePath;
+
+    String fileName;
+
     public PeerToPeer(HashMap<Integer, Neighbor> neighborsInfo, int index_peer, int index_me, int ID_me,
                       BitSet bitfield, boolean[] pieceRequested, BitSet completedLabel, boolean[] isIntersetedOnMe,
                       boolean handshake_flag, Common common, HashMap<Integer, Integer> Rate) {
@@ -57,7 +62,11 @@ public class PeerToPeer extends Thread {
         this.completedLabel=completedLabel;
         this.isIntersetedOnMe=isIntersetedOnMe;
         this.pieceRequested=pieceRequested;
-        npiece = (int) Math.ceil(FileSize / PieceSize);
+        npiece = common.FileSize/common.PieceSize;
+        if (common.FileSize%common.PieceSize != 0) npiece++;
+        filePath = System.getProperty("user.dir") + File.separator
+                + "peer_" + ID_me + File.separator;
+        this.fileName = common.FileName;
         running = true;
 
     }
@@ -103,6 +112,7 @@ public class PeerToPeer extends Thread {
         BitSet bitfieldpeer = peer.getBitfield();
         int n=0;
         int length=npiece;
+        //System.out.println(npiece);
         int[] intArray0 = new int[length];
         for (int i = 0; i < length; i++) {
             if (bitfieldpeer.get(i)&&!bitfield.get(i)&&!pieceRequested[i]) {///& not requested
@@ -111,14 +121,12 @@ public class PeerToPeer extends Thread {
             }
         }
         Random indexselect = new Random();
-        int h;
-        h = indexselect.nextInt(n);
         if(n==0){
             return -1;
         }
-        else{
-            return intArray0[h];
-        }
+        int h;
+        h = indexselect.nextInt(n);
+        return intArray0[h];
     }
 
     private byte[] int2byte(final int i) {
@@ -154,9 +162,9 @@ public class PeerToPeer extends Thread {
 
     private byte[] proc_sendpiece(Message sendmessage) {
 
-        int index = byte2int(sendmessage.getIndex());
+        int index = byte2int(sendmessage.getPayload());
         int size;
-        if (index == npiece) {
+        if (index < npiece-1) {
             size = PieceSize;
         } else {
             size = FileSize - (npiece - 1) * PieceSize;
@@ -164,7 +172,7 @@ public class PeerToPeer extends Thread {
         byte[] what = new byte[size];
 
         try {
-            File file = new File(index + ".part");
+            File file = new File(filePath + fileName + index + ".part");
             FileInputStream in = new FileInputStream(file);
             in.read(what);
 
@@ -179,7 +187,7 @@ public class PeerToPeer extends Thread {
         try {
             //File file = new File(index+".part");
             //FileOutputStream out = new FileOutputStream(file);
-            FileOutputStream out = new FileOutputStream(index + ".part");
+            FileOutputStream out = new FileOutputStream(filePath + fileName + index + ".part");
             out.write(piecemessage.getPayload());
             out.flush();
 
@@ -252,8 +260,16 @@ public class PeerToPeer extends Thread {
             Object receivemessage = null;
             try {
                 receivemessage = a.in.readObject();
+
+            } catch (SocketException e) {
+                // this is fine
+
+            } catch (EOFException e) {
+                // this is fine
+
             } catch (IOException ioException) {
                 ioException.printStackTrace();
+
             } catch (ClassNotFoundException e) {
                 System.err.println("Data received in unknown format!");
             }
@@ -297,18 +313,22 @@ public class PeerToPeer extends Thread {
                         Message sendrequest = new Message(length, 6, indexbyte);
                         proc_sendmessage(a, sendrequest);  /*send request*/
                         pieceRequested[indexneed]=true;
-                        System.out.println(myid + " sent request to " + peerid);
+                        System.out.println(myid + " sent request to " + peerid + " for part." + indexneed);
                     }
                 }////add not interest or not
 
                 if (abs.getType() == 2) {
                     isIntersetedOnMe[peerid]=true; /*interest*/
-                    System.out.println(myid + " get interest to " + peerid);
+                    System.out.println(myid + " received interest message from " + peerid);
+                    // skip chock, for test
+//                    Message msg = new Message(1, 1, null);
+//                    proc_sendmessage(a, msg);
+                    //
                 }
 
                 if (abs.getType() == 3) {
                     isIntersetedOnMe[peerid]=false;/*not interest*/
-                    System.out.println(myid + " is no more interesting to " + peerid);
+                    System.out.println(myid + " received not interest message from " + peerid);
                 }
 
                 if (abs.getType() == 4) {/*have*/
@@ -318,6 +338,7 @@ public class PeerToPeer extends Thread {
                     if (a.isComplete()) {
                         completedLabel.set(peerid);
                     }
+                    System.out.println("File complete status: " + completedLabel);
                     if (!checkneedbit(abs)) {
                         Message sendinterest = new Message(length, 2, null);
                         proc_sendmessage(a, sendinterest);
@@ -336,20 +357,25 @@ public class PeerToPeer extends Thread {
                         Message sendnotinterest = new Message(length, 3, null);
                         proc_sendmessage(a, sendnotinterest);
                     }
+                    if (a.isComplete()) {
+                        completedLabel.set(peerid);
+                    }
+                    System.out.println("File complete status: " + completedLabel);
                 }
 
                 if (abs.getType() == 6) {/*request*/
-                    System.out.println(myid + " received request from " + peerid);
+                    System.out.println(myid + " received request from " + peerid + " for part." + byte2int(abs.getPayload()));
                     byte[] payload_file = proc_sendpiece(abs);
-                    Message piecemessage = new Message(length, 7, abs.getIndex(), payload_file);
+                    Message piecemessage = new Message(length, 7, abs.getPayload(), payload_file);
                     proc_sendmessage(a, piecemessage);
 
                 }
 
                 if (abs.getType() == 7) {/*piece*/
-                    System.out.println(myid + " received piece part." + abs.getIndex());
+                    System.out.println(myid + " received piece part." + byte2int(abs.getIndex()));
                     downloadprocess(abs);
                     bitfield.set(byte2int(abs.getIndex()));
+                    System.out.println(myid + "'s bitfield: " + bitfield);
                     Rate.put(peerid,Rate.get(peerid)+1);
                     int newneed = checkneed(a);
                     if (newneed>=0 & !chokeflag) {
@@ -358,10 +384,10 @@ public class PeerToPeer extends Thread {
                         pieceRequested[newneed]=true;
 
                     }
-                    else if(newneed<0) {
-                        Message sendnotinterest = new Message(length, 3, null);
-                        proc_sendmessage(a, sendnotinterest);
-                    }
+//                    else if(newneed<0) {
+//                        Message sendnotinterest = new Message(length, 3, null);
+//                        proc_sendmessage(a, sendnotinterest);
+//                    }
 
                     for (Neighbor x : neighborsInfo.values()) {//check all peer if interest
                         int newneed2=checkneed(x);
@@ -376,9 +402,11 @@ public class PeerToPeer extends Thread {
                     if (bitfield.nextClearBit(0) >= npiece) {
                         completedLabel.set(myid);
                     }
+                    System.out.println("File complete status: " + completedLabel);
                 }
             }
         }
+        System.out.println("P2P from " + myid + " to " + peerid + " is stopped.");
     }
 
     public void stopRunning() {
