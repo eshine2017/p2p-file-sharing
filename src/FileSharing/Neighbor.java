@@ -18,6 +18,7 @@ public class Neighbor {
     private int portNum;
     private BitSet bitfield;
     private int nPieces;
+    private PeerToPeer thread;
     private Socket connection;
     ObjectInputStream in;
     ObjectOutputStream out;
@@ -80,9 +81,15 @@ public class Neighbor {
         return bitfield.nextClearBit(0) >= nPieces;
     }
 
+    /** attach p2p thread to this neighbor */
+    public void setThread(PeerToPeer thread) {
+        this.thread = thread;
+    }
+
     /** close connection to this neighbor */
     public void closeConnection() {
         try {
+            thread.stopRunning();
             in.close();
             out.close();
             connection.close();

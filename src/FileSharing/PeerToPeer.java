@@ -6,9 +6,9 @@ import java.nio.ByteBuffer;
 import java.math.BigInteger;
 import Communication.*;
 
-public class PeerToPeer {
+public class PeerToPeer extends Thread {
 
-    private boolean need_flag = false;
+    private volatile boolean running;
 
     private int peerid;
 
@@ -22,9 +22,9 @@ public class PeerToPeer {
 
     private int PieceSize;
 
-    private double npieced = Math.ceil(FileSize / PieceSize);
+    //private double npieced;
 
-    private int npiece = (int) npieced;
+    private int npiece;
 
     private HashMap<Integer, Integer> Rate;
 
@@ -35,6 +35,10 @@ public class PeerToPeer {
     private BitSet completedLabel;
 
     private boolean[] isIntersetedOnMe;
+
+    private boolean[] pieceRequested;
+
+    private boolean chokeflag=true;
 
     public PeerToPeer(HashMap<Integer, Neighbor> neighborsInfo, int index_peer, int index_me, int ID_me,
                       BitSet bitfield, boolean[] pieceRequested, BitSet completedLabel, boolean[] isIntersetedOnMe,
@@ -49,8 +53,12 @@ public class PeerToPeer {
         this.Rate=Rate;
         this.ID_me=ID_me;
         this.bitfield=bitfield;
+        System.out.println(myid + "'s bitfield: " + bitfield);
         this.completedLabel=completedLabel;
         this.isIntersetedOnMe=isIntersetedOnMe;
+        this.pieceRequested=pieceRequested;
+        npiece = (int) Math.ceil(FileSize / PieceSize);
+        running = true;
 
     }
 
@@ -94,19 +102,23 @@ public class PeerToPeer {
     private int checkneed(Neighbor peer)/*check unchoke*/ {
         BitSet bitfieldpeer = peer.getBitfield();
         int n=0;
-        int length=bitfield.length();
+        int length=npiece;
         int[] intArray0 = new int[length];
         for (int i = 0; i < length; i++) {
-            if (bitfieldpeer.get(i)&!bitfield.get(i)) {
+            if (bitfieldpeer.get(i)&&!bitfield.get(i)&&!pieceRequested[i]) {///& not requested
                 intArray0[n] = i;
                 n = n + 1;
-                need_flag = true;
             }
         }
         Random indexselect = new Random();
         int h;
         h = indexselect.nextInt(n);
-        return intArray0[h];
+        if(n==0){
+            return -1;
+        }
+        else{
+            return intArray0[h];
+        }
     }
 
     private byte[] int2byte(final int i) {
@@ -131,9 +143,9 @@ public class PeerToPeer {
     private boolean checkinterest(Neighbor peer)/*check bitfield*/ {
         boolean need_flag2 = false;
         BitSet bitfieldpeer = peer.getBitfield();
-        int length=bitfield.length();
+        int length=npiece;
         for (int i = 0; i < length; i++) {
-            if (bitfieldpeer.get(i)&!bitfield.get(i)) {
+            if (bitfieldpeer.get(i)&&!bitfield.get(i)) {
                 need_flag2 = true;
             }
         }
@@ -155,8 +167,6 @@ public class PeerToPeer {
             File file = new File(index + ".part");
             FileInputStream in = new FileInputStream(file);
             in.read(what);
-            in.close();
-            ;
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -172,7 +182,6 @@ public class PeerToPeer {
             FileOutputStream out = new FileOutputStream(index + ".part");
             out.write(piecemessage.getPayload());
             out.flush();
-            out.close();
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -233,9 +242,13 @@ public class PeerToPeer {
         Neighbor a = neighborsInfo.get(peerid);
 
         // if this is client, send handshake immediately
-        if (handshake_flag) createsendhandshake();
+        if (handshake_flag) {
+            createsendhandshake();
+            System.out.println(myid + " sent handshake to " + peerid);
+        }
 
-        while (true) {
+        System.out.println(myid + " goes to main loop.");
+        while (running) {
             Object receivemessage = null;
             try {
                 receivemessage = a.in.readObject();
@@ -244,6 +257,9 @@ public class PeerToPeer {
             } catch (ClassNotFoundException e) {
                 System.err.println("Data received in unknown format!");
             }
+
+//            if (receivemessage != null)
+//                System.out.println("Hey, " + myid + " received something!");
 
             if (receivemessage instanceof Handshake) {
 
@@ -255,40 +271,50 @@ public class PeerToPeer {
                 } else {
                     a.setPeerID(((Handshake) receivemessage).getPeerID());
                     createsendhandshake();
+                    System.out.println(myid + " sent handshake to " + peerid);
                 }
 
                 // send bitfield immediately after handshake
                 Message sendbitfield = new Message(length, 5, bit2byte(bitfield) );
                 proc_sendmessage(a, sendbitfield);
+                System.out.println(myid + " sent bitfield to " + peerid);
 
             }
 
             if (receivemessage instanceof Message) {
                 Message abs = (Message) receivemessage;
                 if (abs.getType() == 0) { /*chock*/
+                    chokeflag = true;
+                    System.out.println(myid + " is chocked by " + peerid);
                 }
 
                 if (abs.getType() == 1) { /*unchoke*/
+                    chokeflag = false;
+                    System.out.println(myid + " is unchocked by " + peerid);
                     int indexneed = checkneed(a);
                     byte[] indexbyte = int2byte(indexneed);
-                    if (need_flag = true) {
+                    if (indexneed>=0) {
                         Message sendrequest = new Message(length, 6, indexbyte);
-                        need_flag = false;
                         proc_sendmessage(a, sendrequest);  /*send request*/
+                        pieceRequested[indexneed]=true;
+                        System.out.println(myid + " sent request to " + peerid);
                     }
-                }
+                }////add not interest or not
 
                 if (abs.getType() == 2) {
                     isIntersetedOnMe[peerid]=true; /*interest*/
+                    System.out.println(myid + " get interest to " + peerid);
                 }
 
                 if (abs.getType() == 3) {
                     isIntersetedOnMe[peerid]=false;/*not interest*/
+                    System.out.println(myid + " is no more interesting to " + peerid);
                 }
 
                 if (abs.getType() == 4) {/*have*/
                     int index = byte2int(abs.getPayload());
                     a.updateBitfield(index);
+                    System.out.println(peerid + " has part." + index);
                     if (a.isComplete()) {
                         completedLabel.set(peerid);
                     }
@@ -300,6 +326,9 @@ public class PeerToPeer {
 
                 if (abs.getType() == 5) {/*bitfield*/
                     a.setBitfield(byte2bit(abs.getPayload()));
+                    System.out.println(myid + " received bitfield from " + peerid);
+                    System.out.println(myid + "'s bitfield: " + bitfield);
+                    System.out.println(peerid + "'s bitfield: " + a.getBitfield());
                     if (checkinterest(a)) {
                         Message sendinterest = new Message(length, 2, null);
                         proc_sendmessage(a, sendinterest);
@@ -310,6 +339,7 @@ public class PeerToPeer {
                 }
 
                 if (abs.getType() == 6) {/*request*/
+                    System.out.println(myid + " received request from " + peerid);
                     byte[] payload_file = proc_sendpiece(abs);
                     Message piecemessage = new Message(length, 7, abs.getIndex(), payload_file);
                     proc_sendmessage(a, piecemessage);
@@ -317,18 +347,30 @@ public class PeerToPeer {
                 }
 
                 if (abs.getType() == 7) {/*piece*/
+                    System.out.println(myid + " received piece part." + abs.getIndex());
                     downloadprocess(abs);
                     bitfield.set(byte2int(abs.getIndex()));
                     Rate.put(peerid,Rate.get(peerid)+1);
                     int newneed = checkneed(a);
-                    if (need_flag = true) {
+                    if (newneed>=0 & !chokeflag) {
                         Message sendrequest = new Message(length, 6, int2byte(newneed));
-                        need_flag = false;
                         proc_sendmessage(a, sendrequest);
-                    } else {
+                        pieceRequested[newneed]=true;
+
+                    }
+                    else if(newneed<0) {
                         Message sendnotinterest = new Message(length, 3, null);
                         proc_sendmessage(a, sendnotinterest);
                     }
+
+                    for (Neighbor x : neighborsInfo.values()) {//check all peer if interest
+                        int newneed2=checkneed(x);
+                        if (newneed2<0) {
+                            Message sendnotinterest = new Message(length, 3, null);
+                            proc_sendmessage(a, sendnotinterest);
+                        }
+                    }
+
                     Message havepiece = new Message(length, 4, abs.getIndex());
                     sendhavetoallpeer(havepiece);
                     if (bitfield.nextClearBit(0) >= npiece) {
@@ -338,4 +380,9 @@ public class PeerToPeer {
             }
         }
     }
+
+    public void stopRunning() {
+        running = false;
+    }
+
 }
