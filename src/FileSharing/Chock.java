@@ -2,10 +2,9 @@ package FileSharing;
 
 import Communication.Message;
 
-import java.io.EOFException;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.net.SocketException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class Chock extends Thread {
@@ -29,9 +28,11 @@ public class Chock extends Thread {
     private boolean[] curInterestedMe;
     private HashMap<Integer, Neighbor> neighborsInfo;
     private BitSet bitfield;
+    private int ID_me;
+    private String filePath;
 
     public Chock(HashMap<Integer,Integer> curSendMeMsg, boolean[] curInterestedMe, Common x,
-                 HashMap neighborsInfo, BitSet bitfield) {
+                 HashMap neighborsInfo, BitSet bitfield, int ID_me) {
         // bitfield.nextClearBit(0) >= nPieces
         this.numOfPeers = curInterestedMe.length;
         isChock = new boolean[numOfPeers];
@@ -45,6 +46,9 @@ public class Chock extends Thread {
         this.numOfPreferedNerghbor = x.NumberOfPreferredNeighbors;
         this.neighborsInfo = neighborsInfo;
         this.bitfield = bitfield;
+        this.ID_me = ID_me;
+        filePath = System.getProperty("user.dir") + File.separator
+                + "peer_" + ID_me + File.separator;
         running = true;
     }
     public int getUnchockInterval(){
@@ -96,42 +100,67 @@ public class Chock extends Thread {
             count++;
             //unchock Interval
             if(count%unchockInterval==0){
+                int logFlag = 0;
                 //contain the index of neighbor interested in P
                 preferNeighbor = maxRateNeighbor();
                 System.out.println(preferNeighbor);
 
                 if(preferNeighbor==null||preferNeighbor.size()==0){
-                    System.out.println("unchock failed");
+                    System.out.println("unchoke failed");
                 }
 
                 //make sure optimistically unchock
                 //isChock[optIndex] = false;
                 //make sure other peer chocked
-                for(int i=0; i<isChock.length; i++){
-                    if(!isChock[i]&&!preferNeighbor.contains(i)&&i!=optIndex){
-                        isChock[i] = true;
-                        //create chock message;
-                        Message msg = new Message(1, 0, null);
-                        //send chock to peer i;
-                        sendMessage(msg, i);
-                        System.out.println("[" + count + "]" + "Peer chock peer " + i);
-                    }
-                }
 
-                if(bitfield.nextClearBit(0) >= numOfPeers) {
+                if(bitfield.nextClearBit(0) >= numOfPeers) {   //receive all file parts
+
+                    for(int i=0; i<isChock.length; i++){   //if receive all files, do not need to consider preferNeighbor
+                        if(!isChock[i] && i!=optIndex){
+                            isChock[i] = true;
+                            //create chock message;
+                            Message msg = new Message(1, 0, null);
+                            //send chock to peer i;
+                            sendMessage(msg, i);
+                            System.out.println("[" + count + "]" + "Peer choke peer " + i);
+                            logFlag = 1;
+                        }
+                    }
+
                     int m = 0;
-                    while(m < preferNeighbor.size() && m < numOfPreferedNerghbor) {
-                        int index = (int)(Math.random()*numOfPeers);
-                        if(curInterestedMe[index]&&isChock[index]) {
+                    List<Integer> interestedMe = new ArrayList<>();
+                    for(int i=0; i<curInterestedMe.length; i++) {
+                        if(curInterestedMe[i]) {
+                            interestedMe.add(i);
+                        }
+                    }
+                    while(!interestedMe.isEmpty() && m < numOfPreferedNerghbor) {   //use a list to save the peer interested in me
+                        int i = (int)(Math.random()*interestedMe.size());
+                        int index = interestedMe.get(i);
+                        if(isChock[index]) {
                             Message msg = new Message(1, 1, null);
                             sendMessage(msg, index);
                             isChock[index] = false;
-                            System.out.println("[" + count + "]" + "Peer unchock peer" + index);
+                            interestedMe.remove(i);
+                            System.out.println("[" + count + "]" + "Peer unchoke peer" + index);
+                            logFlag = 1;
                             m++;
                         }
                     }
-                }
-                else {
+                } else {
+
+                    for(int i=0; i<isChock.length; i++){
+                        if(!isChock[i] && !preferNeighbor.contains(i) && i!=optIndex){
+                            isChock[i] = true;
+                            //create chock message;
+                            Message msg = new Message(1, 0, null);
+                            //send chock to peer i;
+                            sendMessage(msg, i);
+                            System.out.println("[" + count + "]" + "Peer choke peer " + i);
+                            logFlag = 1;
+                        }
+                    }
+
                     //choose high speed to unchock
                     for (int i = 0; i < numOfPreferedNerghbor && i < preferNeighbor.size(); i++) {
                         int index = preferNeighbor.get(i);
@@ -142,9 +171,20 @@ public class Chock extends Thread {
                             sendMessage(msg, index);
                             //\\waiting for request message from i;
                             isChock[index] = false;
-                            System.out.println("[" + count + "]" + "Peer unchock peer" + index);
+                            System.out.println("[" + count + "]" + "Peer unchoke peer" + index);
+                            logFlag = 1;
                         }
                     }
+                }
+
+                if(logFlag == 1) {
+                    List<String> unchokeList = new ArrayList<>();
+                    for(int i=0; i<isChock.length; i++) {
+                        if(!isChock[i] && ((i!=optIndex) ||(i==optIndex && preferNeighbor.contains(i)))) {
+                            unchokeList.add("peer_" + i);
+                        }
+                    }
+                    writelog("Peer" + ID_me + " has preferred neighbors" + unchokeList);
                 }
             }
 
@@ -165,25 +205,28 @@ public class Chock extends Thread {
                     //send chock to peer index;
                     sendMessage(msg, optIndex);
                     isChock[optIndex] = true;
-                    System.out.println("[" + count + "]" + "Peer chock peer " + optIndex);
+                    System.out.println("[" + count + "]" + "Peer choke peer " + optIndex);
                 }
                 //\\send chock to peer optIndex;
-                //List<Integer> preferNeighbor = maxRateNeighbor();
-                for(int i=0; ; i++){
-                    //randomly unchock among currently chocked peer
-                    int index = (int)(Math.random()*numOfPeers);
-                    if(isChock[index] && curInterestedMe[index]){
-                        optIndex = index;
-                        Message msg = new Message(1, 1, null);
-                        sendMessage(msg, optIndex);
-                        isChock[optIndex] = false;
-                        break;
+                //add all satisfactory peers into a list
+                List<Integer> optChooseList = new ArrayList<>();
+                for(int i=0; i<numOfPeers; i++){
+                    if(isChock[i] && curInterestedMe[i]) {
+                        optChooseList.add(i);
                     }
                 }
-                //\\create unchock message;
-                //\\send unchock to peer index;
-                //\\waiting for request message from index;
-                System.out.println("[" + count + "]" + "Peer optimistically unchock peer" + optIndex);
+                //randomly unchock among currently chocked peer
+                if(!optChooseList.isEmpty()) {  //if optChooseList is empty, do not need to choose opt
+                    int i = (int) (Math.random() * numOfPeers);
+                    optIndex = optChooseList.get(i);
+                    Message msg = new Message(1, 1, null);
+                    sendMessage(msg, optIndex);
+                    isChock[optIndex] = false;
+
+                    writelog("Peer" + ID_me + " has the optimistically unchoked neighbor" + optIndex);
+
+                    System.out.println("[" + count + "]" + "Peer optimistically unchoke peer" + optIndex);
+                }
             }
         }
         System.out.println("Choke thread is stopped.");
@@ -244,7 +287,7 @@ public class Chock extends Thread {
     private List<Integer> maxRateNeighbor() {
         List<Integer> ReMaxRate = new LinkedList<>();
         int i = 0;
-        Queue<Pair> maxRate = new PriorityQueue<>();
+        Queue<Pair> maxRate = new PriorityQueue<>();  ///what about the equal number??
         for (int k : curSendMeMsg.keySet()) {
             if(curInterestedMe[k]) {
                 maxRate.offer(new Pair(curSendMeMsg.get(k), k));
@@ -271,6 +314,27 @@ public class Chock extends Thread {
         catch(IOException ioException){
             ioException.printStackTrace();
         }
+    }
+
+    private void writelog(String log){
+
+        String logname= filePath+"log_peer_"+ ID_me + ".log";
+        try {
+            SimpleDateFormat time = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            String logtime = time.format(new Date().getTime());
+            log="[" + logtime + "]: " + log;
+            FileWriter fw = new FileWriter(new File(logname), true);
+            PrintWriter pw = new PrintWriter(fw);
+            pw.println(log);
+            pw.flush();
+            fw.flush();
+            pw.close();
+            fw.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+
     }
 
     public void stopRunning() {

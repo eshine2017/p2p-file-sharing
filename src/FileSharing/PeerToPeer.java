@@ -2,6 +2,7 @@ package FileSharing;
 
 import java.io.*;
 import java.net.SocketException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.nio.ByteBuffer;
 import java.math.BigInteger;
@@ -37,6 +38,8 @@ public class PeerToPeer extends Thread {
 
     private boolean[] isIntersetedOnMe;
 
+    boolean[] Myinterest;
+
     private boolean[] pieceRequested;
 
     private boolean chokeflag=true;
@@ -47,7 +50,7 @@ public class PeerToPeer extends Thread {
 
     public PeerToPeer(HashMap<Integer, Neighbor> neighborsInfo, int index_peer, int index_me, int ID_me,
                       BitSet bitfield, boolean[] pieceRequested, BitSet completedLabel, boolean[] isIntersetedOnMe,
-                      boolean handshake_flag, Common common, HashMap<Integer, Integer> Rate) {
+                      boolean handshake_flag, Common common, HashMap<Integer, Integer> Rate, boolean[] Myinterest) {
         this.neighborsInfo = neighborsInfo;
         // neighborsInfo.get(index).in or .out
         this.peerid = index_peer;
@@ -68,6 +71,7 @@ public class PeerToPeer extends Thread {
                 + "peer_" + ID_me + File.separator;
         this.fileName = common.FileName;
         running = true;
+        this.Myinterest=Myinterest;
 
     }
 
@@ -199,6 +203,7 @@ public class PeerToPeer extends Thread {
     private void sendhavetoallpeer(Message havepiece) {
         for (Neighbor x : neighborsInfo.values()) {
             proc_sendmessage(x, havepiece);
+            writelog("Peer " + ID_me + " sent the 'interested' message to " + x.getPeerID());
         }
     }
 
@@ -220,6 +225,27 @@ public class PeerToPeer extends Thread {
             }
         }
         return bytes;
+    }
+
+    private void writelog(String log){
+
+        String logname= filePath+"log_peer_"+ ID_me + ".log";
+        try {
+            SimpleDateFormat time = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            String logtime = time.format(new Date().getTime());
+            log="[" + logtime + "]: " + log;
+            FileWriter fw = new FileWriter(new File(logname), true);
+            PrintWriter pw = new PrintWriter(fw);
+            pw.println(log);
+            pw.flush();
+            fw.flush();
+            pw.close();
+            fw.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+
     }
  /*   private class Filewriter {
 
@@ -253,6 +279,7 @@ public class PeerToPeer extends Thread {
         if (handshake_flag) {
             createsendhandshake();
             System.out.println(myid + " sent handshake to " + peerid);
+            writelog("Peer " + ID_me + " makes a connection to Peer " + a.getPeerID());
         }
 
         System.out.println(myid + " goes to main loop.");
@@ -288,12 +315,14 @@ public class PeerToPeer extends Thread {
                     a.setPeerID(((Handshake) receivemessage).getPeerID());
                     createsendhandshake();
                     System.out.println(myid + " sent handshake to " + peerid);
+                    writelog("Peer " + ID_me + " is connected from Peer " + a.getPeerID());
                 }
 
                 // send bitfield immediately after handshake
                 Message sendbitfield = new Message(length, 5, bit2byte(bitfield) );
                 proc_sendmessage(a, sendbitfield);
                 System.out.println(myid + " sent bitfield to " + peerid);
+                writelog("Peer " + ID_me + " sent the 'bitfield' message to Peer " + a.getPeerID());
 
             }
 
@@ -302,11 +331,13 @@ public class PeerToPeer extends Thread {
                 if (abs.getType() == 0) { /*chock*/
                     chokeflag = true;
                     System.out.println(myid + " is chocked by " + peerid);
+                    writelog("Peer " + ID_me + " is chocked by " + a.getPeerID());
                 }
 
                 if (abs.getType() == 1) { /*unchoke*/
                     chokeflag = false;
                     System.out.println(myid + " is unchocked by " + peerid);
+                    writelog("Peer " + ID_me + " is unchocked by " + a.getPeerID());
                     int indexneed = checkneed(a);
                     byte[] indexbyte = int2byte(indexneed);
                     if (indexneed>=0) {
@@ -314,12 +345,15 @@ public class PeerToPeer extends Thread {
                         proc_sendmessage(a, sendrequest);  /*send request*/
                         pieceRequested[indexneed]=true;
                         System.out.println(myid + " sent request to " + peerid + " for part." + indexneed);
+                        writelog("Peer " + ID_me + " sent the 'request' message to " + a.getPeerID());
+
                     }
                 }////add not interest or not
 
                 if (abs.getType() == 2) {
                     isIntersetedOnMe[peerid]=true; /*interest*/
                     System.out.println(myid + " received interest message from " + peerid);
+                    writelog("Peer " + ID_me + " received the 'interested' message from " + a.getPeerID());
                     // skip chock, for test
 //                    Message msg = new Message(1, 1, null);
 //                    proc_sendmessage(a, msg);
@@ -329,9 +363,11 @@ public class PeerToPeer extends Thread {
                 if (abs.getType() == 3) {
                     isIntersetedOnMe[peerid]=false;/*not interest*/
                     System.out.println(myid + " received not interest message from " + peerid);
+                    writelog("Peer " + ID_me + " received the 'not interested' message from " + a.getPeerID());
                 }
 
                 if (abs.getType() == 4) {/*have*/
+                    writelog("Peer " + ID_me + " received the 'have' message from " + a.getPeerID());
                     int index = byte2int(abs.getPayload());
                     a.updateBitfield(index);
                     System.out.println(peerid + " has part." + index);
@@ -339,13 +375,16 @@ public class PeerToPeer extends Thread {
                         completedLabel.set(peerid);
                     }
                     System.out.println("File complete status: " + completedLabel);
-                    if (!checkneedbit(abs)) {
+                    if (!checkneedbit(abs)& !Myinterest[peerid]) {
                         Message sendinterest = new Message(length, 2, null);
                         proc_sendmessage(a, sendinterest);
+                        Myinterest[peerid]=true;
+                        writelog("Peer " + ID_me + " sent the 'interested' message to " + a.getPeerID());
                     }
                 }
 
                 if (abs.getType() == 5) {/*bitfield*/
+                    writelog("Peer " + ID_me + " received the 'bitfield' message from " + a.getPeerID());
                     a.setBitfield(byte2bit(abs.getPayload()));
                     System.out.println(myid + " received bitfield from " + peerid);
                     System.out.println(myid + "'s bitfield: " + bitfield);
@@ -353,9 +392,13 @@ public class PeerToPeer extends Thread {
                     if (checkinterest(a)) {
                         Message sendinterest = new Message(length, 2, null);
                         proc_sendmessage(a, sendinterest);
+                        Myinterest[peerid]=true;
+                        writelog("Peer " + ID_me + " sent the 'interested' message to " + a.getPeerID());
                     } else {
                         Message sendnotinterest = new Message(length, 3, null);
                         proc_sendmessage(a, sendnotinterest);
+                        Myinterest[peerid]=false;
+                        writelog("Peer " + ID_me + " sent the 'not interested' message to " + a.getPeerID());
                     }
                     if (a.isComplete()) {
                         completedLabel.set(peerid);
@@ -364,16 +407,20 @@ public class PeerToPeer extends Thread {
                 }
 
                 if (abs.getType() == 6) {/*request*/
+                    writelog("Peer " + ID_me + " received the 'request' message from " + a.getPeerID());
                     System.out.println(myid + " received request from " + peerid + " for part." + byte2int(abs.getPayload()));
                     byte[] payload_file = proc_sendpiece(abs);
                     Message piecemessage = new Message(length, 7, abs.getPayload(), payload_file);
                     proc_sendmessage(a, piecemessage);
+                    writelog("Peer " + ID_me + " sent the 'piece' message to " + a.getPeerID());
 
                 }
 
                 if (abs.getType() == 7) {/*piece*/
+                    writelog("Peer " + ID_me + " received the 'piece' message from " + a.getPeerID());
                     System.out.println(myid + " received piece part." + byte2int(abs.getIndex()));
                     downloadprocess(abs);
+                    writelog("Peer " + ID_me + " has downloaded the piece " + byte2int(abs.getIndex()) +  " from "+ a.getPeerID());
                     bitfield.set(byte2int(abs.getIndex()));
                     System.out.println(myid + "'s bitfield: " + bitfield);
                     Rate.put(peerid,Rate.get(peerid)+1);
@@ -382,6 +429,7 @@ public class PeerToPeer extends Thread {
                         Message sendrequest = new Message(length, 6, int2byte(newneed));
                         proc_sendmessage(a, sendrequest);
                         pieceRequested[newneed]=true;
+                        writelog("Peer " + ID_me + " sent the 'request' message to " + a.getPeerID());
 
                     }
 //                    else if(newneed<0) {
@@ -391,9 +439,11 @@ public class PeerToPeer extends Thread {
 
                     for (Neighbor x : neighborsInfo.values()) {//check all peer if interest
                         int newneed2=checkneed(x);
-                        if (newneed2<0) {
+                        if (newneed2<0 & Myinterest[x.getIndex()]) {
                             Message sendnotinterest = new Message(length, 3, null);
                             proc_sendmessage(a, sendnotinterest);
+                            Myinterest[x.getIndex()]=false;
+                            writelog("Peer " + ID_me + " sent the 'not interested' message to " + a.getPeerID());
                         }
                     }
 
@@ -401,6 +451,7 @@ public class PeerToPeer extends Thread {
                     sendhavetoallpeer(havepiece);
                     if (bitfield.nextClearBit(0) >= npiece) {
                         completedLabel.set(myid);
+                        writelog("peer " + ID_me + " has downloaded the complete file.");
                     }
                     System.out.println("File complete status: " + completedLabel);
                 }
