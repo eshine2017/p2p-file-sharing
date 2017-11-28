@@ -92,6 +92,7 @@ public class Chock extends Thread {
         }
         int count = 1;
         List<Integer> preferNeighbor = new LinkedList<>();
+        List<Integer> preRandomNeighbor = new ArrayList<>();
         while(running){
             try{
                 sleep(1000);
@@ -106,15 +107,18 @@ public class Chock extends Thread {
                 preferNeighbor = maxRateNeighbor();
                 System.out.println(preferNeighbor);
 
-                if(preferNeighbor==null||preferNeighbor.size()==0){
-                    System.out.println("unchoke failed");
-                }
+//                if(preferNeighbor==null||preferNeighbor.size()==0){
+//                    System.out.println("unchoke failed");
+//                }
 
                 //make sure optimistically unchock
                 //isChock[optIndex] = false;
                 //make sure other peer chocked
-                List<Integer> preRandomNeighbor = new ArrayList<>();
-                if(bitfield.nextClearBit(0) >= numOfPeers) {   //receive all file parts
+                boolean flag0;
+                synchronized (bitfield) {
+                    flag0 = bitfield.nextClearBit(0) >= numOfPeers;
+                }
+                if(flag0) {   //receive all file parts
 
 //                    for(int i=0; i<isChock.length; i++){   //if receive all files, do not need to consider preferNeighbor
 //                        if(!isChock[i] && i!=optIndex){
@@ -279,7 +283,7 @@ public class Chock extends Thread {
                 }
             }
         }
-        System.out.println("Choke thread is stopped.");
+//        System.out.println("Choke thread is stopped.");
     }
 
     //find a list of high speed neighbor also interested at P
@@ -375,6 +379,7 @@ public class Chock extends Thread {
 
     private void writelog(String log){
 
+        String filePath = System.getProperty("user.dir") + File.separator;
         String logname= filePath+"log_peer_"+ ID_me + ".log";
         try {
             SimpleDateFormat time = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");

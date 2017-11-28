@@ -253,6 +253,7 @@ public class PeerToPeer extends Thread {
 
     private void writelog(String log){
 
+        String filePath = System.getProperty("user.dir") + File.separator;
         String logname= filePath+"log_peer_"+ ID_me + ".log";
         try {
             SimpleDateFormat time = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");

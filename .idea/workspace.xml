@@ -2,25 +2,22 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="021c8e12-8aaf-4d8d-b928-9e5b5f47e25f" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/out/production/p2p-file-sharing/FileSharing/Chock$Pair.class" afterPath="$PROJECT_DIR$/out/production/p2p-file-sharing/FileSharing/Chock$Pair.class" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/out/production/p2p-file-sharing/FileSharing/Chock.class" afterPath="$PROJECT_DIR$/out/production/p2p-file-sharing/FileSharing/Chock.class" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/out/production/p2p-file-sharing/FileSharing/Host$Server.class" afterPath="$PROJECT_DIR$/out/production/p2p-file-sharing/FileSharing/Host$Server.class" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/out/production/p2p-file-sharing/FileSharing/Host.class" afterPath="$PROJECT_DIR$/out/production/p2p-file-sharing/FileSharing/Host.class" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/out/production/p2p-file-sharing/FileSharing/Neighbor.class" afterPath="$PROJECT_DIR$/out/production/p2p-file-sharing/FileSharing/Neighbor.class" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/out/production/p2p-file-sharing/FileSharing/PeerToPeer.class" afterPath="$PROJECT_DIR$/out/production/p2p-file-sharing/FileSharing/PeerToPeer.class" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/out/production/p2p-file-sharing/peer_1001/log_peer_1001.log" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/out/production/p2p-file-sharing/peer_1001/testbook.pdf" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/out/production/p2p-file-sharing/peer_1002/log_peer_1002.log" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/out/production/p2p-file-sharing/peer_1002/testbook.pdf" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/out/production/p2p-file-sharing/peer_1003/log_peer_1003.log" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/out/production/p2p-file-sharing/peer_1003/testbook.pdf" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/out/production/p2p-file-sharing/peer_1004/log_peer_1004.log" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/out/production/p2p-file-sharing/peer_1004/testbook.pdf" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/out/production/p2p-file-sharing/peer_1005/log_peer_1005.log" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/out/production/p2p-file-sharing/peer_1005/testbook.pdf" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/out/production/p2p-file-sharing/peer_1006/log_peer_1006.log" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/out/production/p2p-file-sharing/peer_1006/testbook.pdf" afterPath="" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/out/production/p2p-file-sharing/Common.cfg" afterPath="$PROJECT_DIR$/out/production/p2p-file-sharing/Common.cfg" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/out/production/p2p-file-sharing/peer_1001/log_peer_1001.log" afterPath="$PROJECT_DIR$/out/production/p2p-file-sharing/peer_1001/log_peer_1001.log" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/out/production/p2p-file-sharing/peer_1002/log_peer_1002.log" afterPath="$PROJECT_DIR$/out/production/p2p-file-sharing/peer_1002/log_peer_1002.log" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/out/production/p2p-file-sharing/peer_1003/log_peer_1003.log" afterPath="$PROJECT_DIR$/out/production/p2p-file-sharing/peer_1003/log_peer_1003.log" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/out/production/p2p-file-sharing/peer_1004/log_peer_1004.log" afterPath="$PROJECT_DIR$/out/production/p2p-file-sharing/peer_1004/log_peer_1004.log" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/out/production/p2p-file-sharing/peer_1005/log_peer_1005.log" afterPath="$PROJECT_DIR$/out/production/p2p-file-sharing/peer_1005/log_peer_1005.log" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/out/production/p2p-file-sharing/peer_1006/log_peer_1006.log" afterPath="$PROJECT_DIR$/out/production/p2p-file-sharing/peer_1006/log_peer_1006.log" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/FileSharing/Chock.java" afterPath="$PROJECT_DIR$/src/FileSharing/Chock.java" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/FileSharing/Host.java" afterPath="$PROJECT_DIR$/src/FileSharing/Host.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/FileSharing/Neighbor.java" afterPath="$PROJECT_DIR$/src/FileSharing/Neighbor.java" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/FileSharing/PeerToPeer.java" afterPath="$PROJECT_DIR$/src/FileSharing/PeerToPeer.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/Test.java" afterPath="$PROJECT_DIR$/src/Test.java" />
     </list>
     <ignored path="$PROJECT_DIR$/out/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -32,13 +29,20 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file leaf-file-name="Host.java" pinned="false" current-in-tab="true">
+      <file leaf-file-name="Host.java" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/FileSharing/Host.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1905">
-              <caret line="127" column="28" lean-forward="false" selection-start-line="127" selection-start-column="28" selection-end-line="127" selection-end-column="28" />
+            <state relative-caret-position="161">
+              <caret line="298" column="98" lean-forward="false" selection-start-line="298" selection-start-column="90" selection-end-line="298" selection-end-column="98" />
               <folding>
                 <element signature="imports" expanded="true" />
+                <marker date="1511902740346" expanded="true" signature="6615:7218" ph="{...}" />
+                <marker date="1511902740346" expanded="true" signature="7260:9842" ph="{...}" />
+                <marker date="1511902740346" expanded="true" signature="7364:7383" ph="{...}" />
+                <marker date="1511902740346" expanded="true" signature="7411:9590" ph="{...}" />
+                <marker date="1511902740346" expanded="true" signature="7658:7885" ph="//..." />
+                <marker date="1511902740346" expanded="true" signature="9626:9835" ph="{...}" />
+                <marker date="1511902740346" expanded="true" signature="9937:11705" ph="{...}" />
               </folding>
             </state>
           </provider>
@@ -47,9 +51,12 @@
       <file leaf-file-name="Chock.java" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/FileSharing/Chock.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="5955">
-              <caret line="405" column="31" lean-forward="true" selection-start-line="405" selection-start-column="31" selection-end-line="405" selection-end-column="31" />
-              <folding />
+            <state relative-caret-position="4125">
+              <caret line="281" column="21" lean-forward="false" selection-start-line="281" selection-start-column="21" selection-end-line="281" selection-end-column="21" />
+              <folding>
+                <marker date="1511900472753" expanded="false" signature="15885:15896" ph=" { " />
+                <marker date="1511900472753" expanded="false" signature="15912:15918" ph=" }" />
+              </folding>
             </state>
           </provider>
         </entry>
@@ -64,11 +71,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="PeerToPeer.java" pinned="false" current-in-tab="false">
+      <file leaf-file-name="PeerToPeer.java" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/FileSharing/PeerToPeer.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="554">
-              <caret line="506" column="33" lean-forward="false" selection-start-line="506" selection-start-column="33" selection-end-line="506" selection-end-column="33" />
+            <state relative-caret-position="1670">
+              <caret line="512" column="82" lean-forward="false" selection-start-line="512" selection-start-column="68" selection-end-line="512" selection-end-column="82" />
               <folding />
             </state>
           </provider>
@@ -77,8 +84,8 @@
       <file leaf-file-name="Test.java" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/Test.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="465">
-              <caret line="33" column="40" lean-forward="true" selection-start-line="33" selection-start-column="40" selection-end-line="33" selection-end-column="40" />
+            <state relative-caret-position="0">
+              <caret line="38" column="0" lean-forward="true" selection-start-line="33" selection-start-column="40" selection-end-line="38" selection-end-column="0" />
               <folding>
                 <element signature="imports" expanded="true" />
                 <element signature="e#544#545#0" expanded="true" />
@@ -163,9 +170,9 @@
       <find>curInterestedMe</find>
       <find>Myinterest</find>
       <find>pieceRequested</find>
-      <find>completedLabel</find>
-      <find>bitfield</find>
       <find>syn</find>
+      <find>bitfield</find>
+      <find>completedLabel</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -182,10 +189,10 @@
         <option value="$PROJECT_DIR$/src/Communication/Handshake.java" />
         <option value="$PROJECT_DIR$/src/FileProcessing/FileProcess.java" />
         <option value="$PROJECT_DIR$/src/FileSharing/Neighbor.java" />
-        <option value="$PROJECT_DIR$/src/FileSharing/Host.java" />
-        <option value="$PROJECT_DIR$/src/FileSharing/Chock.java" />
-        <option value="$PROJECT_DIR$/src/FileSharing/PeerToPeer.java" />
         <option value="$PROJECT_DIR$/src/Test.java" />
+        <option value="$PROJECT_DIR$/src/FileSharing/Host.java" />
+        <option value="$PROJECT_DIR$/src/FileSharing/PeerToPeer.java" />
+        <option value="$PROJECT_DIR$/src/FileSharing/Chock.java" />
       </list>
     </option>
   </component>
@@ -393,7 +400,7 @@
       <window_info id="Capture Analysis" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32944608" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
       <window_info id="Maven Projects" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
-      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.32944608" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32944608" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32944608" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32944608" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Capture Tool" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
@@ -446,7 +453,7 @@
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
-      <option name="time" value="2" />
+      <option name="time" value="3" />
     </breakpoint-manager>
     <watches-manager />
   </component>
@@ -517,6 +524,13 @@
           <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
           <folding>
             <element signature="imports" expanded="true" />
+            <marker date="1511902740346" expanded="true" signature="6615:7218" ph="{...}" />
+            <marker date="1511902740346" expanded="true" signature="7260:9842" ph="{...}" />
+            <marker date="1511902740346" expanded="true" signature="7364:7383" ph="{...}" />
+            <marker date="1511902740346" expanded="true" signature="7411:9590" ph="{...}" />
+            <marker date="1511902740346" expanded="true" signature="7658:7885" ph="//..." />
+            <marker date="1511902740346" expanded="true" signature="9626:9835" ph="{...}" />
+            <marker date="1511902740346" expanded="true" signature="9937:11705" ph="{...}" />
           </folding>
         </state>
       </provider>
@@ -587,6 +601,13 @@
           <caret line="226" column="0" lean-forward="false" selection-start-line="226" selection-start-column="0" selection-end-line="226" selection-end-column="0" />
           <folding>
             <element signature="imports" expanded="true" />
+            <marker date="1511902740346" expanded="true" signature="6615:7218" ph="{...}" />
+            <marker date="1511902740346" expanded="true" signature="7260:9842" ph="{...}" />
+            <marker date="1511902740346" expanded="true" signature="7364:7383" ph="{...}" />
+            <marker date="1511902740346" expanded="true" signature="7411:9590" ph="{...}" />
+            <marker date="1511902740346" expanded="true" signature="7658:7885" ph="//..." />
+            <marker date="1511902740346" expanded="true" signature="9626:9835" ph="{...}" />
+            <marker date="1511902740346" expanded="true" signature="9937:11705" ph="{...}" />
           </folding>
         </state>
       </provider>
@@ -665,6 +686,13 @@
           <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
           <folding>
             <element signature="imports" expanded="true" />
+            <marker date="1511902740346" expanded="true" signature="6615:7218" ph="{...}" />
+            <marker date="1511902740346" expanded="true" signature="7260:9842" ph="{...}" />
+            <marker date="1511902740346" expanded="true" signature="7364:7383" ph="{...}" />
+            <marker date="1511902740346" expanded="true" signature="7411:9590" ph="{...}" />
+            <marker date="1511902740346" expanded="true" signature="7658:7885" ph="//..." />
+            <marker date="1511902740346" expanded="true" signature="9626:9835" ph="{...}" />
+            <marker date="1511902740346" expanded="true" signature="9937:11705" ph="{...}" />
           </folding>
         </state>
       </provider>
@@ -764,6 +792,13 @@
           <caret line="56" column="30" lean-forward="true" selection-start-line="56" selection-start-column="30" selection-end-line="56" selection-end-column="30" />
           <folding>
             <element signature="imports" expanded="true" />
+            <marker date="1511902740346" expanded="true" signature="6615:7218" ph="{...}" />
+            <marker date="1511902740346" expanded="true" signature="7260:9842" ph="{...}" />
+            <marker date="1511902740346" expanded="true" signature="7364:7383" ph="{...}" />
+            <marker date="1511902740346" expanded="true" signature="7411:9590" ph="{...}" />
+            <marker date="1511902740346" expanded="true" signature="7658:7885" ph="//..." />
+            <marker date="1511902740346" expanded="true" signature="9626:9835" ph="{...}" />
+            <marker date="1511902740346" expanded="true" signature="9937:11705" ph="{...}" />
           </folding>
         </state>
       </provider>
@@ -842,18 +877,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/FileSharing/PeerToPeer.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="554">
-          <caret line="506" column="33" lean-forward="false" selection-start-line="506" selection-start-column="33" selection-end-line="506" selection-end-column="33" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/Test.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="465">
-          <caret line="33" column="40" lean-forward="true" selection-start-line="33" selection-start-column="40" selection-end-line="33" selection-end-column="40" />
+        <state relative-caret-position="0">
+          <caret line="38" column="0" lean-forward="true" selection-start-line="33" selection-start-column="40" selection-end-line="38" selection-end-column="0" />
           <folding>
             <element signature="imports" expanded="true" />
             <element signature="e#544#545#0" expanded="true" />
@@ -872,19 +899,37 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/FileSharing/Chock.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="5955">
-          <caret line="405" column="31" lean-forward="true" selection-start-line="405" selection-start-column="31" selection-end-line="405" selection-end-column="31" />
-          <folding />
+        <state relative-caret-position="4125">
+          <caret line="281" column="21" lean-forward="false" selection-start-line="281" selection-start-column="21" selection-end-line="281" selection-end-column="21" />
+          <folding>
+            <marker date="1511900472753" expanded="false" signature="15885:15896" ph=" { " />
+            <marker date="1511900472753" expanded="false" signature="15912:15918" ph=" }" />
+          </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/src/FileSharing/Host.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1905">
-          <caret line="127" column="28" lean-forward="false" selection-start-line="127" selection-start-column="28" selection-end-line="127" selection-end-column="28" />
+        <state relative-caret-position="161">
+          <caret line="298" column="98" lean-forward="false" selection-start-line="298" selection-start-column="90" selection-end-line="298" selection-end-column="98" />
           <folding>
             <element signature="imports" expanded="true" />
+            <marker date="1511902740346" expanded="true" signature="6615:7218" ph="{...}" />
+            <marker date="1511902740346" expanded="true" signature="7260:9842" ph="{...}" />
+            <marker date="1511902740346" expanded="true" signature="7364:7383" ph="{...}" />
+            <marker date="1511902740346" expanded="true" signature="7411:9590" ph="{...}" />
+            <marker date="1511902740346" expanded="true" signature="7658:7885" ph="//..." />
+            <marker date="1511902740346" expanded="true" signature="9626:9835" ph="{...}" />
+            <marker date="1511902740346" expanded="true" signature="9937:11705" ph="{...}" />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/FileSharing/PeerToPeer.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1670">
+          <caret line="512" column="82" lean-forward="false" selection-start-line="512" selection-start-column="68" selection-end-line="512" selection-end-column="82" />
+          <folding />
         </state>
       </provider>
     </entry>

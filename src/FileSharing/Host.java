@@ -73,7 +73,7 @@ public class Host extends Thread {
         if (!dir.exists()) dir.mkdir();
 
         // delete old log and create a new one
-        File file = new File(filePath + "log_peer_" + hostID + ".log");
+        File file = new File(System.getProperty("user.dir") + File.separator + "log_peer_" + hostID + ".log");
         if (file.exists()) {
             file.delete();
         }
@@ -157,7 +157,7 @@ public class Host extends Thread {
 
         // wait 10 sec for service to stop
         try {
-            sleep(10000);
+            sleep(5000);
             System.out.println("Awesome, all peers have gotten the file!!!");
             System.exit(0);
         } catch (InterruptedException e) {
@@ -245,7 +245,7 @@ public class Host extends Thread {
         }
 
         public void stopRunning() {
-//            endService();
+            endService();
             running = false;
             try {
                 hostSocket.close();
