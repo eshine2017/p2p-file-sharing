@@ -46,6 +46,11 @@ public class Neighbor {
         this.out = out;
     }
 
+    /** get index of this neighbor */
+    public int getIndex() {
+        return index;
+    }
+
     /** get ID of this neighbor */
     public int getPeerID() {
         return peerID;

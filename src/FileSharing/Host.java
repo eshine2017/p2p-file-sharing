@@ -1,8 +1,11 @@
 package FileSharing;
 
+import Communication.Message;
+
 import java.io.*;
 import java.net.*;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Host is responsible for parameters maintaining, establish connection to running severs,
@@ -25,10 +28,11 @@ public class Host extends Thread {
     /* neighbors information */
     private int nConnectedPeers;                        // number of connected peers
     private boolean[] isInterestedOnMe;                 // are peers (index) interested on host
+    private boolean[] interestPeers;                    // peers (index) I am interested in
     //private boolean[] isChocked;                        // are peers (index) chocked by host
     private BitSet completedLabel;                      // does peer own whole file?
     private HashMap<Integer, String[]> peerInfo;        // index -> peer info from PeerInfo.cfg
-    private HashMap<Integer, Neighbor> neighborsInfo;   // neighbor index -> neighbor information
+    private ConcurrentHashMap<Integer, Neighbor> neighborsInfo;   // neighbor index -> neighbor information
     private HashMap<Integer, Integer> sharingRate;      // neighbor index -> sending rate in n of parts
 
     /** constructor */
@@ -42,26 +46,42 @@ public class Host extends Thread {
         nPieces = common.FileSize/common.PieceSize;
         if (common.FileSize%common.PieceSize != 0) nPieces++;
         this.bitfield = initBitfield(fileStatus); // init bitfield (all 1 or all 0)
-        System.out.println(index + "'s bitfield: " + bitfield);
+//        System.out.println(index + "'s bitfield: " + bitfield);
         pieceRequested = new boolean[nPieces];
         this.nPeers = nPeers;
-        System.out.println("I have " + nPeers + "peers.");
+//        System.out.println("I have " + nPeers + "peers.");
         this.common = common;
 
         // init neighbors info
         nConnectedPeers = 0;
         isInterestedOnMe = new boolean[nPeers];
+        interestPeers = new boolean[nPeers];
         // when start, all neighbors are chocked
         //isChocked = new boolean[nPeers];
         //for (int i = 0; i < nPeers; i++) isChocked[i] = true;
         completedLabel = new BitSet(nPeers);
         this.peerInfo = peerInfo;
-        neighborsInfo = new HashMap<>();
+        neighborsInfo = new ConcurrentHashMap<>();
         sharingRate = new HashMap<>();
-        for (int i = 0; i < nPeers; i++) sharingRate.put(i, 0);
+        //for (int i = 0; i < nPeers; i++) sharingRate.put(i, 0);
 
         String filePath = System.getProperty("user.dir") + File.separator
                 + "peer_" + hostID + File.separator;
+
+        // check if given directory exist
+        File dir = new File(filePath);
+        if (!dir.exists()) dir.mkdir();
+
+        // delete old log and create a new one
+        File file = new File(filePath + "log_peer_" + hostID + ".log");
+        if (file.exists()) {
+            file.delete();
+        }
+        try {
+            file.createNewFile();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         fp = new FileProcessing.FileProcess(common.FileName, filePath,
                 filePath, common.FileSize, common.PieceSize);
         // if already have complete file, divide the file into parts
@@ -95,7 +115,7 @@ public class Host extends Thread {
         System.out.println("Successfully connected to all running peers.");
 
         // open a Choke thread
-        Chock choke = new Chock(sharingRate, isInterestedOnMe, common, neighborsInfo, bitfield);
+        Chock choke = new Chock(sharingRate, isInterestedOnMe, common, neighborsInfo, bitfield, hostID);
         choke.start();
 
         // open a Server to listen to TCP request from other peers
@@ -109,8 +129,10 @@ public class Host extends Thread {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            System.out.println("Current complete label: " + completedLabel);
-            if (completedLabel.nextClearBit(0) >= nPeers) break;
+//            System.out.println("Current complete label: " + completedLabel);
+            synchronized (completedLabel) {
+                if (completedLabel.nextClearBit(0) >= nPeers) break;
+            }
         }
 //        try {
 //            sleep(5000);
@@ -132,9 +154,32 @@ public class Host extends Thread {
 //        }
         server.stopRunning();
         choke.stopRunning();
-        for (Neighbor neighbor : neighborsInfo.values()) neighbor.closeConnection();
+        synchronized (neighborsInfo) {
+            for (Neighbor neighbor : neighborsInfo.values()) neighbor.closeConnection();
+        }
         System.out.println("Awesome, all peers have gotten the file!!!");
 
+    }
+
+    private void endService() {
+        Message msg = new Message(1, 8, null);
+        synchronized (neighborsInfo) {
+            for (Neighbor x : neighborsInfo.values()) {
+                try {
+                    synchronized (x.out) {
+                        //stream write the message
+                        x.out.writeObject(msg);
+                        x.out.flush();
+                    }
+
+                } catch (SocketException e) {
+                    // this is fine
+
+                } catch (IOException ioException) {
+                    ioException.printStackTrace();
+                }
+            }
+        }
     }
 
     private class Server extends Thread {
@@ -151,12 +196,12 @@ public class Host extends Thread {
                 hostSocket = new ServerSocket(portNum);
                 // as long as there are peers who do not get the whole file
                 while (running) {
-                    System.out.println("Host complete label: " + completedLabel);
+//                    System.out.println("Host complete label: " + completedLabel);
 
                     // accept connection request from other peer
-                    System.out.println("Host is listening to the socket.");
+//                    System.out.println("Host is listening to the socket.");
                     Socket socket = hostSocket.accept();
-                    System.out.println("Host received connection.");
+//                    System.out.println("Host received connection.");
                     ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
                     out.flush();
                     ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
@@ -164,12 +209,21 @@ public class Host extends Thread {
                     // add a new neighbor
                     int neighborIndex = ++nConnectedPeers;
                     Neighbor neighbor = new Neighbor(neighborIndex, nPieces, socket, in, out);
-                    neighborsInfo.put(neighborIndex, neighbor);
-                    sharingRate.put(neighborIndex, 0);
+
+                    // set neighbor bitfield to all 0
+                    BitSet bits = initBitfield(0);
+                    neighbor.setBitfield(bits);
+                    synchronized (neighbor) {
+                        neighborsInfo.put(neighborIndex, neighbor);
+                    }
+                    synchronized (sharingRate) {
+                        sharingRate.put(neighborIndex, 0);
+                    }
 
                     // create a new server for file sharing
-                    PeerToPeer thread = new PeerToPeer(neighborsInfo, neighborIndex, index, hostID, bitfield,
-                            pieceRequested, completedLabel, isInterestedOnMe, false, common, sharingRate);
+                    PeerToPeer thread = new PeerToPeer(neighborsInfo, neighborIndex, index, hostID,
+                            bitfield, pieceRequested, completedLabel, isInterestedOnMe, false,
+                            common, sharingRate, interestPeers);
                     neighbor.setThread(thread);
                     thread.start();
                     System.out.println(index + " get connected from " + neighborIndex);
@@ -186,6 +240,7 @@ public class Host extends Thread {
         }
 
         public void stopRunning() {
+            endService();
             running = false;
             try {
                 hostSocket.close();
@@ -228,12 +283,17 @@ public class Host extends Thread {
         // create a new neighbor and link it to given index
         Neighbor neighbor = new Neighbor(index, peerID, peerAddress, peerPort, nPieces, socket, in, out);
         neighbor.setBitfield(bitfield);
-        neighborsInfo.put(index, neighbor);
-        sharingRate.put(index, 0);
+        synchronized (neighborsInfo) {
+            neighborsInfo.put(index, neighbor);
+        }
+        synchronized (sharingRate) {
+            sharingRate.put(index, 0);
+        }
 
         // open a new thread for file sharing between host and this peer
         PeerToPeer thread = new PeerToPeer(neighborsInfo, index, this.index, hostID, this.bitfield,
-                pieceRequested, completedLabel, isInterestedOnMe, true, common, sharingRate);
+                pieceRequested, completedLabel, isInterestedOnMe, true,
+                common, sharingRate, interestPeers);
         neighbor.setThread(thread);
         thread.start();
 

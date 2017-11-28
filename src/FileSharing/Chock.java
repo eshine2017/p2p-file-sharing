@@ -6,6 +6,7 @@ import java.io.*;
 import java.net.SocketException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class Chock extends Thread {
 
@@ -26,13 +27,13 @@ public class Chock extends Thread {
     //access to get variable
     private HashMap<Integer, Integer> curSendMeMsg;
     private boolean[] curInterestedMe;
-    private HashMap<Integer, Neighbor> neighborsInfo;
+    private ConcurrentHashMap<Integer, Neighbor> neighborsInfo;
     private BitSet bitfield;
     private int ID_me;
     private String filePath;
 
     public Chock(HashMap<Integer,Integer> curSendMeMsg, boolean[] curInterestedMe, Common x,
-                 HashMap neighborsInfo, BitSet bitfield, int ID_me) {
+                 ConcurrentHashMap neighborsInfo, BitSet bitfield, int ID_me) {
         // bitfield.nextClearBit(0) >= nPieces
         this.numOfPeers = curInterestedMe.length;
         isChock = new boolean[numOfPeers];
@@ -106,14 +107,18 @@ public class Chock extends Thread {
                 System.out.println(preferNeighbor);
 
                 if(preferNeighbor==null||preferNeighbor.size()==0){
-                    System.out.println("unchoke failed");
+                    //System.out.println("unchoke failed");
                 }
 
                 //make sure optimistically unchock
                 //isChock[optIndex] = false;
                 //make sure other peer chocked
 
-                if(bitfield.nextClearBit(0) >= numOfPeers) {   //receive all file parts
+                boolean isComplete;
+                synchronized (bitfield) {
+                    isComplete = bitfield.nextClearBit(0) >= numOfPeers;
+                }
+                if(isComplete) {   //receive all file parts
 
                     for(int i=0; i<isChock.length; i++){   //if receive all files, do not need to consider preferNeighbor
                         if(!isChock[i] && i!=optIndex){
@@ -129,9 +134,11 @@ public class Chock extends Thread {
 
                     int m = 0;
                     List<Integer> interestedMe = new ArrayList<>();
-                    for(int i=0; i<curInterestedMe.length; i++) {
-                        if(curInterestedMe[i]) {
-                            interestedMe.add(i);
+                    synchronized (curInterestedMe) {
+                        for (int i = 0; i < curInterestedMe.length; i++) {
+                            if (curInterestedMe[i]) {
+                                interestedMe.add(i);
+                            }
                         }
                     }
                     while(!interestedMe.isEmpty() && m < numOfPreferedNerghbor) {   //use a list to save the peer interested in me
@@ -179,17 +186,20 @@ public class Chock extends Thread {
 
                 if(logFlag == 1) {
                     List<String> unchokeList = new ArrayList<>();
-                    for(int i=0; i<isChock.length; i++) {
-                        if(!isChock[i] && ((i!=optIndex) ||(i==optIndex && preferNeighbor.contains(i)))) {
-                            unchokeList.add("peer_" + i);
+                    synchronized (neighborsInfo) {
+                        for (int i = 0; i < isChock.length; i++) {
+                            if (!isChock[i] && ((i != optIndex) || (i == optIndex && preferNeighbor.contains(i)))) {
+                                unchokeList.add("" + neighborsInfo.get(i).getPeerID());
+                            }
                         }
+                        writelog("Peer " + ID_me + " has preferred neighbors " + unchokeList);
                     }
-                    writelog("Peer" + ID_me + " has preferred neighbors" + unchokeList);
                 }
             }
 
             //optimistically unchock interval
-            if(count%optUnchockInterval==0 && preferNeighbor.size()>numOfPreferedNerghbor){
+            //&& preferNeighbor.size()>=numOfPreferedNerghbor
+            if(count%optUnchockInterval==0 ){
                 //actually not new, waiting for coming
                 //boolean[] curInterestedMe = new boolean[numOfNeighbor];
                 if(curInterestedMe.length==0){
@@ -199,7 +209,7 @@ public class Chock extends Thread {
 
                 //List<Integer> preferNeighbor = maxRateNeighbor();
 
-                if(preferNeighbor!=null&&!preferNeighbor.contains(optIndex)) {
+                if(optIndex!=-1 && preferNeighbor!=null&&!preferNeighbor.contains(optIndex)) {
                     //create chock message;
                     Message msg = new Message(1, 0, null);
                     //send chock to peer index;
@@ -217,13 +227,16 @@ public class Chock extends Thread {
                 }
                 //randomly unchock among currently chocked peer
                 if(!optChooseList.isEmpty()) {  //if optChooseList is empty, do not need to choose opt
-                    int i = (int) (Math.random() * numOfPeers);
+                    int i = (int) (Math.random() * optChooseList.size());
                     optIndex = optChooseList.get(i);
                     Message msg = new Message(1, 1, null);
                     sendMessage(msg, optIndex);
                     isChock[optIndex] = false;
 
-                    writelog("Peer" + ID_me + " has the optimistically unchoked neighbor" + optIndex);
+                    synchronized (neighborsInfo) {
+                        writelog("Peer " + ID_me + " has the optimistically unchoked neighbor " +
+                                neighborsInfo.get(optIndex).getPeerID());
+                    }
 
                     System.out.println("[" + count + "]" + "Peer optimistically unchoke peer" + optIndex);
                 }
@@ -288,6 +301,8 @@ public class Chock extends Thread {
         List<Integer> ReMaxRate = new LinkedList<>();
         int i = 0;
         Queue<Pair> maxRate = new PriorityQueue<>();  ///what about the equal number??
+        for (int index : curSendMeMsg.keySet())
+            System.out.println("current sending me message: " + index);
         for (int k : curSendMeMsg.keySet()) {
             if(curInterestedMe[k]) {
                 maxRate.offer(new Pair(curSendMeMsg.get(k), k));
@@ -297,15 +312,23 @@ public class Chock extends Thread {
             ReMaxRate.add(maxRate.poll().index);
             i++;
         }
+        System.out.println("my reMaxRate is " + ReMaxRate);
         return ReMaxRate;
     }
 
     private void sendMessage(Message msg, int i)
     {
+        ObjectOutputStream out;
+        synchronized (neighborsInfo) {
+            out = neighborsInfo.get(i).out;
+        }
         try{
-            //stream write the message
-            neighborsInfo.get(i).out.writeObject(msg);
-            neighborsInfo.get(i).out.flush();
+            synchronized (out) {
+                //stream write the message
+                out.writeObject(msg);
+                out.flush();
+            }
+
         } catch (SocketException e) {
             // this is fine
         } catch (EOFException e) {

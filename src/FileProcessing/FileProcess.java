@@ -82,22 +82,22 @@ public class FileProcess {
             fileIn.close();
             //divide pieces with full size
             for (int i = 0; i < numOfPiece-1; i++) {
-                System.out.println("trying to creat part." + i + " with size of " + pieceSize + " bytes");
+//                System.out.println("trying to creat part." + i + " with size of " + pieceSize + " bytes");
                 FileOutputStream fileOut = new FileOutputStream(outFilePath + fileName + i + ".part");
                 //output subfile
                 fileOut.write(filebuf, pieceSize * i, pieceSize);
                 fileOut.flush();
                 fileOut.close();
-                System.out.println("part." + i + " of file created successfully");
+//                System.out.println("part." + i + " of file created successfully");
             }
             
             //divide final piece
-            System.out.println("trying to creat last part" + (numOfPiece-1) + " with size of " + lastSize + "bytes");
+//            System.out.println("trying to creat last part" + (numOfPiece-1) + " with size of " + lastSize + "bytes");
             FileOutputStream fileOut = new FileOutputStream(outFilePath + fileName + (numOfPiece-1) + ".part");
             fileOut.write(filebuf, pieceSize * (numOfPiece - 1), lastSize);
             fileOut.flush();
             fileOut.close();
-            System.out.println("last part of file created successfully");
+//            System.out.println("last part of file created successfully");
             System.out.println("Divide successfully");
         }catch(FileNotFoundException e){
             e.printStackTrace();
@@ -125,11 +125,11 @@ public class FileProcess {
                 for (int i = 0; i < numOfPiece; i++) {
                     byte[] buf = new byte[pieceSize];
                     FileInputStream inStream = new FileInputStream(outFilePath + fileName + i + ".part");
-                    System.out.println("trying to recontribute part " + i +" of the file");
+//                    System.out.println("trying to recontribute part " + i +" of the file");
                     int count;
                     if ((count = inStream.read(buf)) != 0) {
                         outStream.write(buf, 0, count);
-                        System.out.println("part" + i + " recontribute successfully");
+//                        System.out.println("part" + i + " recontribute successfully");
                     }
                     inStream.close();
                     File file = new File(outFilePath + fileName + i + ".part");
