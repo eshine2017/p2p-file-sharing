@@ -29,7 +29,7 @@ public class PeerToPeer extends Thread {
 
     private int npiece;
 
-    private HashMap<Integer, Integer> Rate;
+    private ConcurrentHashMap<Integer, Integer> Rate;
 
     private int ID_me;
 
@@ -51,7 +51,7 @@ public class PeerToPeer extends Thread {
 
     public PeerToPeer(ConcurrentHashMap<Integer, Neighbor> neighborsInfo, int index_peer, int index_me, int ID_me,
                       BitSet bitfield, boolean[] pieceRequested, BitSet completedLabel, boolean[] isIntersetedOnMe,
-                      boolean handshake_flag, Common common, HashMap<Integer, Integer> Rate, boolean[] Myinterest) {
+                      boolean handshake_flag, Common common, ConcurrentHashMap<Integer, Integer> Rate, boolean[] Myinterest) {
         this.neighborsInfo = neighborsInfo;
         // neighborsInfo.get(index).in or .out
         this.peerid = index_peer;
@@ -466,58 +466,64 @@ public class PeerToPeer extends Thread {
                 if (abs.getType() == 7) {/*piece*/
                     //writelog("Peer " + ID_me + " received the 'piece' message from " + a.getPeerID());
 //                    System.out.println(myid + " received piece part." + byte2int(abs.getIndex()));
-                    downloadprocess(abs);
+                    if (!bitfield.get(byte2int(abs.getIndex()))) {
+                        downloadprocess(abs);
 //                    try {
 //                        sleep(200);
 //                    } catch (InterruptedException e) {
 //                        e.printStackTrace();
 //                    }
-                    writelog("Peer " + ID_me + " has downloaded the piece " + byte2int(abs.getIndex()) +  " from "+ a.getPeerID());
-                    bitfield.set(byte2int(abs.getIndex()));
-                    //System.out.println(myid + "'s bitfield: " + bitfield);
-                    synchronized (Rate) {
-                        Rate.put(peerid, Rate.get(peerid) + 1);
-                    }
-                    int newneed = checkneed(a);
-                    if (newneed>=0 & !chokeflag) {
-                        Message sendrequest = new Message(length, 6, int2byte(newneed));
-                        proc_sendmessage(a, sendrequest);
-                        pieceRequested[newneed]=true;
-                        //writelog("Peer " + ID_me + " sent the 'request' message to " + a.getPeerID());
+                        writelog("Peer " + ID_me + " has downloaded the piece " + byte2int(abs.getIndex()) + " from " + a.getPeerID());
+                        bitfield.set(byte2int(abs.getIndex()));
 
                     }
+                        //System.out.println(myid + "'s bitfield: " + bitfield);
+                        synchronized (Rate) {
+                            Rate.put(peerid, Rate.get(peerid) + 1);
+                        }
+                        int newneed = checkneed(a);
+                        if (newneed >= 0 & !chokeflag) {
+                            Message sendrequest = new Message(length, 6, int2byte(newneed));
+                            proc_sendmessage(a, sendrequest);
+                            pieceRequested[newneed] = true;
+                            //writelog("Peer " + ID_me + " sent the 'request' message to " + a.getPeerID());
+
+                        }
 //                    else if(newneed<0) {
 //                        Message sendnotinterest = new Message(length, 3, null);
 //                        proc_sendmessage(a, sendnotinterest);
 //                    }
-
 
                     Message havepiece = new Message(length, 4, abs.getIndex());
                     sendhavetoallpeer(havepiece);
                     synchronized (bitfield) {
                         if (bitfield.nextClearBit(0) >= npiece) {
                             synchronized (completedLabel) {
-                                completedLabel.set(myid);
-                                writelog("peer " + ID_me + " has downloaded the complete file.");
+                                if (!completedLabel.get(myid)) {
+                                    completedLabel.set(myid);
+                                    writelog("peer " + ID_me + " has downloaded the complete file.");
 //                                Message completeme = new Message(length, 8, int2byte(myid));
 //                                sendhavetoallpeer(completeme);
-                            }
-                        }
-                    }
-//                    System.out.println("File complete status: " + completedLabel);
-
-                    synchronized (neighborsInfo) {
-                        for (Neighbor x : neighborsInfo.values()) {//check all peer if interest
-                            synchronized (Myinterest) {
-                                if (!checkinterest(x) && Myinterest[x.getIndex()]) {
-                                    Message sendnotinterest = new Message(length, 3, null);
-                                    proc_sendmessage(x, sendnotinterest);
-                                    Myinterest[x.getIndex()] = false;
-                                    //writelog("Peer " + ID_me + " sent the 'not interested' message to " + x.getPeerID());
                                 }
                             }
                         }
                     }
+
+//                    System.out.println("File complete status: " + completedLabel);
+
+                        synchronized (neighborsInfo) {
+                            for (Neighbor x : neighborsInfo.values()) {//check all peer if interest
+                                synchronized (Myinterest) {
+                                    if (!checkinterest(x) && Myinterest[x.getIndex()]) {
+                                        Message sendnotinterest = new Message(length, 3, null);
+                                        proc_sendmessage(x, sendnotinterest);
+                                        Myinterest[x.getIndex()] = false;
+                                        //writelog("Peer " + ID_me + " sent the 'not interested' message to " + x.getPeerID());
+                                    }
+                                }
+                            }
+                        }
+
                 }
                 if (abs.getType() == 8)
                 {

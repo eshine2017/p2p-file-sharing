@@ -33,7 +33,7 @@ public class Host extends Thread {
     private BitSet completedLabel;                      // does peer own whole file?
     private HashMap<Integer, String[]> peerInfo;        // index -> peer info from PeerInfo.cfg
     private ConcurrentHashMap<Integer, Neighbor> neighborsInfo;   // neighbor index -> neighbor information
-    private HashMap<Integer, Integer> sharingRate;      // neighbor index -> sending rate in n of parts
+    private ConcurrentHashMap<Integer, Integer> sharingRate;      // neighbor index -> sending rate in n of parts
 
     /** constructor */
     public Host(int index, int peerID, int portNum, int fileStatus, int nPeers,
@@ -62,7 +62,7 @@ public class Host extends Thread {
         completedLabel = new BitSet(nPeers);
         this.peerInfo = peerInfo;
         neighborsInfo = new ConcurrentHashMap<>();
-        sharingRate = new HashMap<>();
+        sharingRate = new ConcurrentHashMap<>();
         //for (int i = 0; i < nPeers; i++) sharingRate.put(i, 0);
 
         String filePath = System.getProperty("user.dir") + File.separator
@@ -129,16 +129,12 @@ public class Host extends Thread {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-//            System.out.println("Current complete label: " + completedLabel);
+            System.out.println("Current complete label: " + completedLabel);
             synchronized (completedLabel) {
                 if (completedLabel.nextClearBit(0) >= nPeers) break;
             }
         }
-//        try {
-//            sleep(5000);
-//        } catch (InterruptedException e) {
-//            e.printStackTrace();
-//        }
+
 
         // close all sockets and threads
         String filePath = System.getProperty("user.dir") + File.separator
@@ -152,12 +148,21 @@ public class Host extends Thread {
 //        } catch (InterruptedException e) {
 //            e.printStackTrace();
 //        }
-        server.stopRunning();
+
         choke.stopRunning();
+        server.stopRunning();
         synchronized (neighborsInfo) {
             for (Neighbor neighbor : neighborsInfo.values()) neighbor.closeConnection();
         }
-        System.out.println("Awesome, all peers have gotten the file!!!");
+
+        // wait 10 sec for service to stop
+        try {
+            sleep(10000);
+            System.out.println("Awesome, all peers have gotten the file!!!");
+            System.exit(0);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
 
     }
 
@@ -240,7 +245,7 @@ public class Host extends Thread {
         }
 
         public void stopRunning() {
-            endService();
+//            endService();
             running = false;
             try {
                 hostSocket.close();

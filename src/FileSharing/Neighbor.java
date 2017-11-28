@@ -72,17 +72,17 @@ public class Neighbor {
     }
 
     /** set bitfield to given BitSet */
-    public void setBitfield(BitSet bitfield) {
+    public synchronized void setBitfield(BitSet bitfield) {
         this.bitfield = bitfield;
     }
 
     /** set bit at index to true */
-    public void updateBitfield(int index) {
+    public synchronized void updateBitfield(int index) {
         bitfield.set(index);
     }
 
     /** check whether this neighbor has got complete file */
-    public boolean isComplete() {
+    public synchronized boolean isComplete() {
         return bitfield.nextClearBit(0) >= nPieces;
     }
 
